@@ -4,6 +4,7 @@ import (
 	"net"
 	"strings"
 
+	"github.com/StephanGR/JellyWolProxy/internal/metrics"
 	"github.com/sirupsen/logrus"
 )
 
@@ -25,6 +26,17 @@ func IsServerUp(logger *logrus.Logger, address string) bool {
 	}
 	conn.Close()
 	return true
+}
+
+// CheckServerState checks if the server is up and updates the ServerStateGauge metric
+func CheckServerState(logger *logrus.Logger, address string) bool {
+	isUp := IsServerUp(logger, address)
+	if isUp {
+		metrics.ServerStateGauge.Set(1)
+	} else {
+		metrics.ServerStateGauge.Set(0)
+	}
+	return isUp
 }
 
 func ShouldWakeServer(endpoint string, wakeUpEndpoints []string) bool {

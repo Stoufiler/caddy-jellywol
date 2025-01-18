@@ -52,7 +52,7 @@ func ReadinessHandler(logger *logrus.Logger, config *config.Config) http.Handler
 
 		// Check Jellyfin server connectivity
 		serverAddress := config.ForwardIp + ":" + strconv.Itoa(config.ForwardPort)
-		if !util.IsServerUp(logger, serverAddress) {
+		if !util.CheckServerState(logger, serverAddress) {
 			checks["jellyfin"] = Check{
 				Status:  StatusDown,
 				Message: "Jellyfin server is not reachable",
