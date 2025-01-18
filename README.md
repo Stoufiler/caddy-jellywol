@@ -1,17 +1,18 @@
 # JellyWolProxy
 
-JellyWolProxy is a smart proxy server for Jellyfin media server that integrates Wake-on-LAN (WoL) capabilities. It automatically wakes up your Jellyfin server when media content is requested and handles request forwarding efficiently.
+JellyWolProxy is a smart proxy server that seamlessly integrates Jellyfin media server with Wake-on-LAN capabilities. It automatically manages your Jellyfin server's power state by waking it up on-demand when media content is requested and forwarding traffic efficiently.
 
-## Features
+## Key Features
 
-- Automatic Wake-on-LAN when accessing specific media endpoints
-- Intelligent request forwarding to Jellyfin server
-- Configurable endpoints that trigger wake-up
-- Simple JSON-based configuration
+- **Smart Power Management**: Automatically wakes up your Jellyfin server using Wake-on-LAN when media is requested
+- **Transparent Proxying**: Seamlessly forwards requests to your Jellyfin server
+- **Energy Efficient**: Allows your media server to sleep when not in use
+- **Configurable Wake Triggers**: Customize which endpoints trigger server wake-up
+- **Simple Setup**: Easy configuration through JSON file
 
 ## Installation
 
-1. Ensure you have Go 1.21.3 or later installed
+1. Ensure you have Go 1.23.5 or later installed
 2. Clone the repository:
    ```bash
    git clone https://github.com/StephanGR/JellyWolProxy.git
@@ -82,4 +83,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-[Add your license information here]
+GPL License
