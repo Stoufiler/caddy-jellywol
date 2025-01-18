@@ -1,4 +1,4 @@
-.PHONY: all build clean run test lint fmt help pre-commit-install pre-commit-run setup
+.PHONY: all build clean run test lint fmt help pre-commit-install pre-commit-run setup release
 
 # Binary name
 BINARY_NAME=jellywolproxy
@@ -43,6 +43,20 @@ test-coverage: ## Run tests with coverage
 	@echo "Running tests with coverage..."
 	@go test -v -coverprofile=coverage.out ./...
 	@go tool cover -html=coverage.out -o coverage.html
+
+release: ## Create a new release (usage: make release VERSION=v1.0.0)
+	@if [ "$(VERSION)" = "" ]; then \
+		echo "Error: VERSION is required. Use: make release VERSION=v1.0.0"; \
+		exit 1; \
+	fi
+	@if [ -n "`git status --porcelain`" ]; then \
+		echo "Error: working directory is not clean. Please commit or stash changes first."; \
+		exit 1; \
+	fi
+	@echo "Creating new release $(VERSION)..."
+	@git tag -a $(VERSION) -m "Release $(VERSION)"
+	@git push origin $(VERSION)
+	@echo "Release $(VERSION) created and pushed. GitHub Actions will build and publish the release."
 
 lint: ## Run linters
 	@echo "Running linters..."

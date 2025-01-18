@@ -62,6 +62,67 @@ Create a `config.json` file with the following structure:
 2. The proxy then forwards the request to your Jellyfin server
 3. All subsequent requests are forwarded normally until the server goes back to sleep
 
+## Monitoring
+
+JellyWolProxy provides comprehensive monitoring capabilities through health check endpoints and Prometheus metrics.
+
+### Health Check Endpoints
+
+- `/health`: Basic health check endpoint
+  ```json
+  {
+    "status": "UP",
+    "timestamp": "2025-01-18T22:22:33+01:00",
+    "version": "1.0.0"
+  }
+  ```
+
+- `/health/ready`: Detailed readiness check that verifies Jellyfin connectivity
+  ```json
+  {
+    "status": "UP",
+    "timestamp": "2025-01-18T22:22:33+01:00",
+    "version": "1.0.0",
+    "checks": {
+      "jellyfin": {
+        "status": "UP",
+        "message": "Jellyfin server is reachable"
+      }
+    }
+  }
+  ```
+
+### Prometheus Metrics
+
+The `/metrics` endpoint exposes the following metrics in Prometheus format:
+
+| Metric Name | Type | Description | Labels |
+|------------|------|-------------|---------|
+| `jellywolproxy_requests_total` | Counter | Total number of requests processed | `path`, `method`, `status` |
+| `jellywolproxy_wakeup_attempts_total` | Counter | Total number of wake-up attempts | - |
+| `jellywolproxy_wakeup_success_total` | Counter | Total number of successful wake-ups | - |
+| `jellywolproxy_server_state` | Gauge | Current server state (1 = up, 0 = down) | - |
+| `jellywolproxy_request_duration_seconds` | Histogram | Request duration in seconds | `path`, `method` |
+
+### Monitoring Setup
+
+1. Configure Prometheus to scrape the `/metrics` endpoint:
+   ```yaml
+   scrape_configs:
+     - job_name: 'jellywolproxy'
+       static_configs:
+         - targets: ['localhost:8080']
+   ```
+
+2. Use the health check endpoints for uptime monitoring:
+   - `/health` for basic uptime checks
+   - `/health/ready` for detailed health status including Jellyfin connectivity
+
+3. Set up alerting based on metrics:
+   - Server state changes (`jellywolproxy_server_state`)
+   - Failed wake-up attempts (difference between `jellywolproxy_wakeup_attempts_total` and `jellywolproxy_wakeup_success_total`)
+   - High request latency (`jellywolproxy_request_duration_seconds`)
+
 ## Project Structure
 
 ```

@@ -7,9 +7,11 @@ import (
 
 	"github.com/StephanGR/JellyWolProxy/internal/config"
 	"github.com/StephanGR/JellyWolProxy/internal/handlers"
+	"github.com/StephanGR/JellyWolProxy/internal/health"
 	"github.com/StephanGR/JellyWolProxy/internal/logger"
 	"github.com/StephanGR/JellyWolProxy/internal/middlewares"
 	"github.com/StephanGR/JellyWolProxy/internal/server_state"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/viper"
 )
 
@@ -37,9 +39,17 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/health", health.HealthHandler)
+	mux.HandleFunc("/health/ready", health.ReadinessHandler(logger, &cfg))
+	mux.Handle("/metrics", promhttp.Handler())
+
+	mainHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		handlers.Handler(logger, w, r, cfg, serverState)
 	})
+
+	mux.Handle("/", middlewares.MetricsMiddleware(
+		middlewares.RequestLoggerMiddleware(logger, mainHandler),
+	))
 
 	mux.HandleFunc("/ping", handlers.PingHandler)
 
