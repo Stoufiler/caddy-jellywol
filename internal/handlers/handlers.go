@@ -2,15 +2,16 @@ package handlers
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/httputil"
+	"net/url"
+
 	"github.com/StephanGR/JellyWolProxy/internal/config"
 	"github.com/StephanGR/JellyWolProxy/internal/server"
 	"github.com/StephanGR/JellyWolProxy/internal/server_state"
 	"github.com/StephanGR/JellyWolProxy/internal/util"
 	"github.com/StephanGR/JellyWolProxy/internal/wol"
 	"github.com/sirupsen/logrus"
-	"net/http"
-	"net/http/httputil"
-	"net/url"
 )
 
 func handleDomainProxy(w http.ResponseWriter, r *http.Request, config config.Config) {

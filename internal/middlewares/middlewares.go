@@ -1,9 +1,10 @@
 package middlewares
 
 import (
+	"net/http"
+
 	logger2 "github.com/StephanGR/JellyWolProxy/internal/logger"
 	"github.com/sirupsen/logrus"
-	"net/http"
 )
 
 func RequestLoggerMiddleware(logger *logrus.Logger, next http.Handler) http.Handler {

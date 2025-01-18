@@ -1,2 +1,60 @@
+# Binaries and build outputs
+/build/
+/bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+*.html
+coverage.*
+
+# IDE specific files
 .idea/
-main
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Go specific
+*.o
+*.a
+_obj
+_test
+_testmain.go
+
+# Dependency directories (remove if you're using go modules exclusively)
+/vendor/
+
+# Environment files
+.env
+.env.local
+*.env
+
+# Log files
+*.log
+logs/
+
+# Debug files
+debug/
+debug.test
+__debug_bin
+
+# Project specific build artifacts
+/jellywolproxy
+/main

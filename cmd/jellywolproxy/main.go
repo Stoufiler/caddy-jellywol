@@ -3,13 +3,14 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net/http"
+
 	"github.com/StephanGR/JellyWolProxy/internal/config"
 	"github.com/StephanGR/JellyWolProxy/internal/handlers"
 	"github.com/StephanGR/JellyWolProxy/internal/logger"
 	"github.com/StephanGR/JellyWolProxy/internal/middlewares"
 	"github.com/StephanGR/JellyWolProxy/internal/server_state"
 	"github.com/spf13/viper"
-	"net/http"
 )
 
 func main() {

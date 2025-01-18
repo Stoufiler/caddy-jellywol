@@ -1,11 +1,12 @@
 package server
 
 import (
+	"time"
+
 	"github.com/StephanGR/JellyWolProxy/internal/config"
 	"github.com/StephanGR/JellyWolProxy/internal/jellyfin"
 	"github.com/StephanGR/JellyWolProxy/internal/util"
 	"github.com/sirupsen/logrus"
-	"time"
 )
 
 func WaitServerOnline(logger *logrus.Logger, serverAddress string, config *config.Config) {

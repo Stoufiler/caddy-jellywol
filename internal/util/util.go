@@ -1,9 +1,10 @@
 package util
 
 import (
-	"github.com/sirupsen/logrus"
 	"net"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 )
 
 func matchesPattern(endpoint, pattern string) bool {
