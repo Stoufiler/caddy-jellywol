@@ -12,5 +12,6 @@
     "/Videos/*/stream"
   ],
   "serverWakeUpTimeout": 120,
-  "serverWakeUpTicker": 5
+  "serverWakeUpTicker": 5,
+  "logLevel": "Info"
 }

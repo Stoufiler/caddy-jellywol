@@ -12,4 +12,5 @@ type Config struct {
 	WakeUpEndpoints     []string `mapstructure:"wakeUpEndpoints"`
 	ServerWakeUpTimeout int      `mapstructure:"serverWakeUpTimeout"`
 	ServerWakeUpTicker  int      `mapstructure:"serverWakeUpTicker"`
+	LogLevel            string   `mapstructure:"logLevel"`
 }
