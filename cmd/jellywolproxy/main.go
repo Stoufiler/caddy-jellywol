@@ -11,6 +11,7 @@ import (
 	"github.com/StephanGR/JellyWolProxy/internal/logger"
 	"github.com/StephanGR/JellyWolProxy/internal/middlewares"
 	"github.com/StephanGR/JellyWolProxy/internal/server_state"
+	"github.com/StephanGR/JellyWolProxy/internal/services"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -61,6 +62,11 @@ func main() {
 
 	serverState := &server_state.ServerState{}
 
+	// Create concrete service implementations
+	checker := &services.ConcreteServerStateChecker{}
+	waker := &services.ConcreteWaker{}
+	waiter := &services.ConcreteServerWaiter{}
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/health", health.HealthHandler)
@@ -68,7 +74,7 @@ func main() {
 	mux.Handle("/metrics", promhttp.Handler())
 
 	mainHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		handlers.Handler(logger, w, r, cfg, serverState)
+		handlers.Handler(w, r, logger, cfg, serverState, checker, waker, waiter)
 	})
 
 	mux.Handle("/", middlewares.MetricsMiddleware(
