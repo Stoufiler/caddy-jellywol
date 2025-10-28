@@ -32,8 +32,12 @@ func Handler(logger *logrus.Logger, w http.ResponseWriter, r *http.Request, conf
 		serverAddress := fmt.Sprintf("%s:%d", config.WakeUpIp, config.WakeUpPort)
 		logger.Debug("Wake-up endpoint matched, checking server status...")
 		if !util.IsServerUp(logger, serverAddress) {
-			logger.Info("Server is offline, trying to wake up using Wake On Lan")
-			wol.WakeServer(logger, config.MacAddress, config.BroadcastAddress, config, serverState)
+			if wol.WakeServer(logger, config.MacAddress, config.BroadcastAddress, config, serverState) {
+				defer serverState.DoneWakingUp()
+				logger.Info("Server is offline, trying to wake up using Wake On Lan")
+			} else {
+				logger.Info("Server is waking up, waiting for it to be online...")
+			}
 
 			if server.WaitServerOnline(logger, serverAddress, &config) {
 				logger.Info("Server is now online, proxying request")

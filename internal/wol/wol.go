@@ -10,19 +10,18 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func WakeServer(logger *logrus.Logger, macAddress string, broadcastAddress string, config config.Config, serverState *server_state.ServerState) {
+func WakeServer(logger *logrus.Logger, macAddress string, broadcastAddress string, config config.Config, serverState *server_state.ServerState) bool {
 	if !serverState.StartWakingUp() {
 		logger.Info("There is already a wake up in progress")
-		return
+		return false
 	}
-	defer serverState.DoneWakingUp()
 
 	jellyfin.SendJellyfinMessagesToAllSessions(logger, config.JellyfinUrl, config.ApiKey, "Veuillez patienter ", "\nLe serveur démarre...")
 
 	client, err := wol.NewClient()
 	if err != nil {
 		logger.Warnf("Error when creating WOL client : %v", err)
-		return
+		return true
 	}
 	defer func(client *wol.Client) {
 		err := client.Close()
@@ -34,11 +33,12 @@ func WakeServer(logger *logrus.Logger, macAddress string, broadcastAddress strin
 	mac, err := net.ParseMAC(macAddress)
 	if err != nil {
 		logger.Warnf("Invalid mac address : %v", err)
-		return
+		return true
 	}
 	if err := client.Wake(broadcastAddress, mac); err != nil {
 		logger.Warnf("Error when sending magic packet : %v", err)
 	} else {
 		logger.Info("Magic packet sent")
 	}
+	return true
 }
