@@ -35,6 +35,10 @@ func main() {
 		logger.Fatalf("Unable to decode into struct: %v", err)
 	}
 
+	if err := cfg.Validate(); err != nil {
+		logger.Fatalf("Invalid configuration: %v", err)
+	}
+
 	// Determine final log level
 	finalLogLevelStr := "Info" // Default
 	if cfg.LogLevel != "" {
