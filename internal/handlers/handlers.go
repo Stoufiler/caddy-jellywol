@@ -35,8 +35,13 @@ func Handler(logger *logrus.Logger, w http.ResponseWriter, r *http.Request, conf
 			logger.Info("Server is offline, trying to wake up using Wake On Lan")
 			wol.WakeServer(logger, config.MacAddress, config.BroadcastAddress, config, serverState)
 
-			server.WaitServerOnline(logger, serverAddress, &config)
-			return
+			if server.WaitServerOnline(logger, serverAddress, &config) {
+				logger.Info("Server is now online, proxying request")
+				handleDomainProxy(w, r, config)
+			} else {
+				logger.Error("Timeout reached, server did not wake up. Aborting request.")
+				http.Error(w, "Server did not come online in time", http.StatusGatewayTimeout)
+			}
 		} else {
 			logger.Debug("Server is already online, handling domain proxy...")
 			handleDomainProxy(w, r, config)
