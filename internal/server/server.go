@@ -10,8 +10,17 @@ import (
 )
 
 func WaitServerOnline(logger *logrus.Logger, serverAddress string, config *config.Config) bool {
-	timeout := time.After(2 * time.Minute)
-	ticker := time.NewTicker(5 * time.Second)
+	timeoutDuration := time.Duration(config.ServerWakeUpTimeout) * time.Second
+	if config.ServerWakeUpTimeout == 0 {
+		timeoutDuration = 2 * time.Minute
+	}
+	tickerDuration := time.Duration(config.ServerWakeUpTicker) * time.Second
+	if config.ServerWakeUpTicker == 0 {
+		tickerDuration = 5 * time.Second
+	}
+
+	timeout := time.After(timeoutDuration)
+	ticker := time.NewTicker(tickerDuration)
 	defer ticker.Stop()
 
 	for {

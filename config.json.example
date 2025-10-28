@@ -10,5 +10,7 @@
   "wakeUpEndpoints": [
     "/videos/*/main.m3u8",
     "/Videos/*/stream"
-  ]
+  ],
+  "serverWakeUpTimeout": 120,
+  "serverWakeUpTicker": 5
 }
