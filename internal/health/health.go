@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/StephanGR/JellyWolProxy/internal/config"
-	"github.com/StephanGR/JellyWolProxy/internal/util"
+	"github.com/StephanGR/JellyWolProxy/internal/services"
 	"github.com/sirupsen/logrus"
 )
 
@@ -45,14 +45,14 @@ func HealthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // ReadinessHandler checks if all components are ready
-func ReadinessHandler(logger *logrus.Logger, config *config.Config) http.HandlerFunc {
+func ReadinessHandler(logger *logrus.Logger, config *config.Config, checker services.ServerStateChecker) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		checks := make(map[string]Check)
 		status := StatusUp
 
 		// Check Jellyfin server connectivity
 		serverAddress := config.ForwardIp + ":" + strconv.Itoa(config.ForwardPort)
-		if !util.CheckServerState(logger, serverAddress) {
+		if !checker.IsServerUp(logger, serverAddress) {
 			checks["jellyfin"] = Check{
 				Status:  StatusDown,
 				Message: "Jellyfin server is not reachable",

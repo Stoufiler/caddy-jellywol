@@ -70,7 +70,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/health", health.HealthHandler)
-	mux.HandleFunc("/health/ready", health.ReadinessHandler(logger, &cfg))
+	mux.HandleFunc("/health/ready", health.ReadinessHandler(logger, &cfg, checker))
 	mux.Handle("/metrics", promhttp.Handler())
 
 	mainHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
