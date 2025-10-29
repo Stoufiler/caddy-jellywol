@@ -13,7 +13,7 @@ GO_VERSION=$(shell grep -E '^go [0-9]+\.[0-9]+(\.[0-9]+)?$$' go.mod | cut -d ' '
 
 # Build variables
 BUILD_DIR=build
-VERSION?=0.0.4
+VERSION?=0.0.12
 BUILD_TIME=$(shell date +%FT%T%z)
 LDFLAGS=-ldflags "-X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME}"
 

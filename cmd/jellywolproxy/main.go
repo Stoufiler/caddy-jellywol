@@ -18,7 +18,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-const version = "0.0.1" // This will be replaced by the build process
+var version = "0.0.1" // This will be replaced by the build process
 
 func main() {
 	log := logger.InitLogger("Info")

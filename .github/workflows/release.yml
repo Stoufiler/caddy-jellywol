@@ -49,7 +49,7 @@ jobs:
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: 0
         run: |
-          go build -o jelly-wol-proxy-${{ matrix.goos }}-${{ matrix.goarch }} ./cmd/jellywolproxy
+          go build -ldflags="-X main.version=${{ github.ref_name }}" -o jelly-wol-proxy-${{ matrix.goos }}-${{ matrix.goarch }} ./cmd/jellywolproxy
 
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
