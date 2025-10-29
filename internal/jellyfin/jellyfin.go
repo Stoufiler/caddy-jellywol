@@ -31,7 +31,11 @@ func SendJellyfinMessagesToAllSessions(logger *logrus.Logger, jellyfinUrl, apiKe
 		logger.Warn("Error getting sessions from Jellyfin: ", err)
 		return
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			logger.Warn("Error closing response body: ", err)
+		}
+	}()
 
 	var sessions []map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&sessions); err != nil {
@@ -76,6 +80,10 @@ func SendJellyfinMessage(logger *logrus.Logger, jellyfinUrl, apiKey, sessionId, 
 		logger.Warn("Error sending message to Jellyfin: ", err)
 		return
 	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			logger.Warn("Error closing response body: ", err)
+		}
+	}()
 	logger.Info("Message sent to session ID ", sessionId)
-	defer resp.Body.Close()
 }

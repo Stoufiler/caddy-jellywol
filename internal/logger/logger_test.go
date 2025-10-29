@@ -39,6 +39,8 @@ func TestSetLogFile(t *testing.T) {
 		if logger.Out == os.Stdout {
 			t.Error("expected logger output to be a file")
 		}
-		os.Remove(logFile)
+		if err := os.Remove(logFile); err != nil {
+			t.Errorf("failed to remove log file: %v", err)
+		}
 	})
 }

@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"runtime"
 
 	"github.com/inconshreveable/go-update"
@@ -42,7 +42,11 @@ func getLatestVersion() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Error closing response body: %v\n", err)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("unexpected status code: %d", resp.StatusCode)
@@ -71,7 +75,11 @@ func doUpgrade(latestVersion string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Error closing response body: %v\n", err)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
@@ -92,7 +100,11 @@ func doUpgrade(latestVersion string) error {
 	if err != nil {
 		return err
 	}
-	defer configResp.Body.Close()
+	defer func() {
+		if err := configResp.Body.Close(); err != nil {
+			fmt.Printf("Error closing response body: %v\n", err)
+		}
+	}()
 
 	if configResp.StatusCode != http.StatusOK {
 		return fmt.Errorf("unexpected status code: %d", configResp.StatusCode)
@@ -102,17 +114,17 @@ func doUpgrade(latestVersion string) error {
 }
 
 var (
-	githubAPIURL = "https://api.github.com/repos/Stoufiler/JellyWolProxy/releases/latest"
-	applyUpdate = update.Apply
+	githubAPIURL   = "https://api.github.com/repos/Stoufiler/JellyWolProxy/releases/latest"
+	applyUpdate    = update.Apply
 	getDownloadURL = func(version string) (string, error) {
 		return fmt.Sprintf("https://github.com/Stoufiler/JellyWolProxy/releases/download/%s/jellywolproxy_%s_%s", version, runtime.GOOS, runtime.GOARCH), nil
 	}
 	getconfigDownloadURL = func(version string) (string, error) {
 		return fmt.Sprintf("https://github.com/Stoufiler/JellyWolProxy/releases/download/%s/config.json.example", version), nil
 	}
-	readFile = ioutil.ReadFile
+	readFile       = os.ReadFile
 	compareConfigs = func(newConfig io.Reader) error {
-		newConfigBytes, err := ioutil.ReadAll(newConfig)
+		newConfigBytes, err := io.ReadAll(newConfig)
 		if err != nil {
 			return err
 		}

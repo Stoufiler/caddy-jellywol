@@ -2,7 +2,6 @@ package upgrade
 
 import (
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -14,17 +13,19 @@ import (
 
 func TestGetLatestVersion(t *testing.T) {
 	tests := []struct {
-		name          string
-		server        *httptest.Server
-		want          string
-		wantErr       bool
-		expectErrStr  string
+		name         string
+		server       *httptest.Server
+		want         string
+		wantErr      bool
+		expectErrStr string
 	}{
 		{
 			name: "successful response",
 			server: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"tag_name": "v1.2.3"}`))
+				if _, err := w.Write([]byte(`{"tag_name": "v1.2.3"}`)); err != nil {
+					t.Fatal(err)
+				}
 			})),
 			want:    "v1.2.3",
 			wantErr: false,
@@ -41,7 +42,9 @@ func TestGetLatestVersion(t *testing.T) {
 			name: "invalid json",
 			server: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"tag_name": "v1.2.3"`))
+				if _, err := w.Write([]byte(`{"tag_name": "v1.2.3"`)); err != nil {
+					t.Fatal(err)
+				}
 			})),
 			wantErr:      true,
 			expectErrStr: "unexpected EOF",
@@ -76,7 +79,9 @@ func TestGetLatestVersion(t *testing.T) {
 func TestDoUpgrade(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("new binary"))
+		if _, err := w.Write([]byte("new binary")); err != nil {
+			t.Fatal(err)
+		}
 	}))
 	defer server.Close()
 
@@ -123,20 +128,24 @@ func TestCompareConfigs(t *testing.T) {
 			oldConfig: "{\"foo\": \"bar\"}",
 		},
 		{
-			name:      "different config",
-			newConfig: "{\"foo\": \"baz\"}",
-			oldConfig: "{\"foo\": \"bar\"}",
+			name:       "different config",
+			newConfig:  "{\"foo\": \"baz\"}",
+			oldConfig:  "{\"foo\": \"bar\"}",
 			wantOutput: "Configuration has been updated. Please check your config.json file.",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tmpfile, err := ioutil.TempFile("", "config.json.example")
+			tmpfile, err := os.CreateTemp("", "config.json.example")
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer os.Remove(tmpfile.Name())
+			defer func() {
+				if err := os.Remove(tmpfile.Name()); err != nil {
+					t.Fatal(err)
+				}
+			}()
 
 			if _, err := tmpfile.Write([]byte(tt.oldConfig)); err != nil {
 				t.Fatal(err)
@@ -147,7 +156,7 @@ func TestCompareConfigs(t *testing.T) {
 
 			originalReadFile := readFile
 			readFile = func(filename string) ([]byte, error) {
-				return ioutil.ReadFile(tmpfile.Name())
+				return os.ReadFile(tmpfile.Name())
 			}
 			defer func() { readFile = originalReadFile }()
 
@@ -164,8 +173,10 @@ func TestCompareConfigs(t *testing.T) {
 				t.Errorf("compareConfigs() error = %v, wantErr %v", err, false)
 			}
 
-			write.Close()
-			out, _ := ioutil.ReadAll(read)
+			if err := write.Close(); err != nil {
+				t.Fatal(err)
+			}
+			out, _ := io.ReadAll(read)
 
 			if !strings.Contains(string(out), tt.wantOutput) {
 				t.Errorf("compareConfigs() output = %q, want %q", string(out), tt.wantOutput)

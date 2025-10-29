@@ -24,7 +24,9 @@ func IsServerUp(logger *logrus.Logger, address string) bool {
 		logger.Warn("Failed to connect:", err)
 		return false
 	}
-	conn.Close()
+	if err := conn.Close(); err != nil {
+		logger.Warn("Failed to close connection:", err)
+	}
 	return true
 }
 

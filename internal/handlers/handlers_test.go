@@ -45,7 +45,9 @@ func TestHandleDomainProxy(t *testing.T) {
 	// Create a test server to act as the backend
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Hello from backend"))
+		if _, err := w.Write([]byte("Hello from backend")); err != nil {
+			t.Fatal(err)
+		}
 	}))
 	defer backend.Close()
 
