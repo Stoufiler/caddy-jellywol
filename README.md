@@ -16,7 +16,7 @@ JellyWolProxy is a smart proxy server that seamlessly integrates Jellyfin media 
 1. Ensure you have Go 1.23.5 or later installed.
 2. Clone the repository:
    ```bash
-   git clone https://github.com/StephanGR/JellyWolProxy.git
+   git clone https://github.com/Stoufiler/JellyWolProxy.git
    cd JellyWolProxy
    ```
 3. Build the project:

@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/StephanGR/JellyWolProxy/internal/config"
-	"github.com/StephanGR/JellyWolProxy/internal/jellyfin"
-	"github.com/StephanGR/JellyWolProxy/internal/util"
+	"github.com/Stoufiler/JellyWolProxy/internal/config"
+	"github.com/Stoufiler/JellyWolProxy/internal/jellyfin"
+	"github.com/Stoufiler/JellyWolProxy/internal/util"
 	"github.com/sirupsen/logrus"
 )
 

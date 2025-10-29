@@ -6,10 +6,10 @@ import (
 	"net/http/httputil"
 	"net/url"
 
-	"github.com/StephanGR/JellyWolProxy/internal/config"
-	"github.com/StephanGR/JellyWolProxy/internal/server_state"
-	"github.com/StephanGR/JellyWolProxy/internal/services"
-	"github.com/StephanGR/JellyWolProxy/internal/util"
+	"github.com/Stoufiler/JellyWolProxy/internal/config"
+	"github.com/Stoufiler/JellyWolProxy/internal/server_state"
+	"github.com/Stoufiler/JellyWolProxy/internal/services"
+	"github.com/Stoufiler/JellyWolProxy/internal/util"
 	"github.com/sirupsen/logrus"
 )
 

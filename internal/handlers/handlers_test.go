@@ -1,12 +1,15 @@
 package handlers
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strconv"
 	"testing"
 
-	"github.com/StephanGR/JellyWolProxy/internal/config"
-	"github.com/StephanGR/JellyWolProxy/internal/server_state"
+	"github.com/Stoufiler/JellyWolProxy/internal/config"
+	"github.com/Stoufiler/JellyWolProxy/internal/server_state"
 	"github.com/sirupsen/logrus"
 )
 
@@ -38,14 +41,87 @@ func (m *mockServerWaiter) WaitServerOnline(logger *logrus.Logger, serverAddress
 	return m.willSucceed
 }
 
+func TestHandleDomainProxy(t *testing.T) {
+	// Create a test server to act as the backend
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Hello from backend"))
+	}))
+	defer backend.Close()
+
+	// Parse the backend URL
+	backendURL, err := url.Parse(backend.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a config with the backend's host and port
+	port, err := strconv.Atoi(backendURL.Port())
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg := config.Config{
+		ForwardIp:   backendURL.Hostname(),
+		ForwardPort: port,
+	}
+
+	// Create a request to proxy
+	req := httptest.NewRequest("GET", "/", nil)
+	rr := httptest.NewRecorder()
+
+	// Call the handler
+	handleDomainProxy(rr, req, cfg)
+
+	// Check the status code
+	if rr.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d", http.StatusOK, rr.Code)
+	}
+
+	// Check the response body
+	body, err := io.ReadAll(rr.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(body) != "Hello from backend" {
+		t.Errorf("expected body \"Hello from backend\", got \"%s\"", string(body))
+	}
+}
+
+func TestPingHandler(t *testing.T) {
+	req := httptest.NewRequest("GET", "/ping", nil)
+	rr := httptest.NewRecorder()
+
+	PingHandler(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d", http.StatusOK, rr.Code)
+	}
+}
+
 func TestHandler(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel) // Don't show logs during tests
 
+	// Create a test server to act as the backend
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer backend.Close()
+
+	backendURL, err := url.Parse(backend.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	port, err := strconv.Atoi(backendURL.Port())
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	baseConfig := config.Config{
 		WakeUpEndpoints: []string{"/api/wakeup"},
-		ForwardIp:       "127.0.0.1",
-		ForwardPort:     8080, // A dummy port for the test
+		ForwardIp:       backendURL.Hostname(),
+		ForwardPort:     port,
 	}
 
 	t.Run("non-wakeup endpoint", func(t *testing.T) {
@@ -62,8 +138,10 @@ func TestHandler(t *testing.T) {
 		if waker.called {
 			t.Error("WakeServer should not be called for non-wakeup endpoint")
 		}
-		// We expect the proxy to be called, but testing httputil.ReverseProxy is complex.
-		// For this test, we focus on the wake-up logic.
+
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected status %d, got %d", http.StatusOK, rr.Code)
+		}
 	})
 
 	t.Run("wakeup endpoint when server is up", func(t *testing.T) {
@@ -79,6 +157,10 @@ func TestHandler(t *testing.T) {
 
 		if waker.called {
 			t.Error("WakeServer should not be called when server is already up")
+		}
+
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected status %d, got %d", http.StatusOK, rr.Code)
 		}
 	})
 
@@ -96,9 +178,10 @@ func TestHandler(t *testing.T) {
 		if !waker.called {
 			t.Error("WakeServer should be called when server is down")
 		}
-		// Again, not testing the proxy itself, but we expect a successful status
-		// if the proxying was successful. Since the test proxy will fail to connect,
-		// we can't assert on status 200. We focus on the wake-up logic.
+
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected status %d, got %d", http.StatusOK, rr.Code)
+		}
 	})
 
 	t.Run("wakeup endpoint, server down, failed wake", func(t *testing.T) {

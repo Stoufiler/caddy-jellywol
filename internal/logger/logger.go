@@ -2,6 +2,8 @@ package logger
 
 import (
 	"net/http"
+	"os"
+	"runtime"
 
 	"github.com/sirupsen/logrus"
 )
@@ -21,6 +23,23 @@ func InitLogger(logLevel string) *logrus.Logger {
 	logger.SetLevel(level)
 
 	return logger
+}
+
+func SetLogFile(logger *logrus.Logger, logFile string) {
+	if logFile == "" {
+		if runtime.GOOS == "linux" {
+			logFile = "/var/log/jelly-wol-proxy.log"
+		} else {
+			logFile = "jelly-wol-proxy.log"
+		}
+	}
+
+	file, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		logger.Warnf("Failed to open log file: %v", err)
+	} else {
+		logger.SetOutput(file)
+	}
 }
 
 func LogRequest(logger *logrus.Logger, r *http.Request) {

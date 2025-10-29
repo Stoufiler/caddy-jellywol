@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/StephanGR/JellyWolProxy/internal/config"
+	"github.com/Stoufiler/JellyWolProxy/internal/config"
 	"github.com/sirupsen/logrus"
 )
 

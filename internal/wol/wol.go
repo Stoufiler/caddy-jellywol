@@ -3,9 +3,9 @@ package wol
 import (
 	"net"
 
-	"github.com/StephanGR/JellyWolProxy/internal/config"
-	"github.com/StephanGR/JellyWolProxy/internal/jellyfin"
-	"github.com/StephanGR/JellyWolProxy/internal/server_state"
+	"github.com/Stoufiler/JellyWolProxy/internal/config"
+	"github.com/Stoufiler/JellyWolProxy/internal/jellyfin"
+	"github.com/Stoufiler/JellyWolProxy/internal/server_state"
 	"github.com/mdlayher/wol"
 	"github.com/sirupsen/logrus"
 )

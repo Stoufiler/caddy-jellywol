@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/StephanGR/JellyWolProxy/internal/metrics"
+	"github.com/Stoufiler/JellyWolProxy/internal/metrics"
 )
 
 // MetricsMiddleware tracks request metrics

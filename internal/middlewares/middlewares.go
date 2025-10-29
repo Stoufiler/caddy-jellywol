@@ -3,7 +3,7 @@ package middlewares
 import (
 	"net/http"
 
-	logger2 "github.com/StephanGR/JellyWolProxy/internal/logger"
+	logger2 "github.com/Stoufiler/JellyWolProxy/internal/logger"
 	"github.com/sirupsen/logrus"
 )
 

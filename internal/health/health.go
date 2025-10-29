@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/StephanGR/JellyWolProxy/internal/config"
-	"github.com/StephanGR/JellyWolProxy/internal/services"
+	"github.com/Stoufiler/JellyWolProxy/internal/config"
+	"github.com/Stoufiler/JellyWolProxy/internal/services"
 	"github.com/sirupsen/logrus"
 )
 

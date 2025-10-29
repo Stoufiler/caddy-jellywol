@@ -4,7 +4,7 @@ import (
 	"net"
 	"strings"
 
-	"github.com/StephanGR/JellyWolProxy/internal/metrics"
+	"github.com/Stoufiler/JellyWolProxy/internal/metrics"
 	"github.com/sirupsen/logrus"
 )
 

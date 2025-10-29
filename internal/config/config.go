@@ -18,6 +18,7 @@ type Config struct {
 	ServerWakeUpTimeout int      `mapstructure:"serverWakeUpTimeout"`
 	ServerWakeUpTicker  int      `mapstructure:"serverWakeUpTicker"`
 	LogLevel            string   `mapstructure:"logLevel"`
+	LogFile             string   `mapstructure:"logFile"`
 }
 
 func (c *Config) Validate() error {

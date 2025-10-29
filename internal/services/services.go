@@ -2,8 +2,8 @@ package services
 
 import (
 	"net/http"
-	"github.com/StephanGR/JellyWolProxy/internal/config"
-	"github.com/StephanGR/JellyWolProxy/internal/server_state"
+	"github.com/Stoufiler/JellyWolProxy/internal/config"
+	"github.com/Stoufiler/JellyWolProxy/internal/server_state"
 	"github.com/sirupsen/logrus"
 )
 
