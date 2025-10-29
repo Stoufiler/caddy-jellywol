@@ -3,8 +3,10 @@ module github.com/Stoufiler/JellyWolProxy
 go 1.23.5
 
 require (
+	github.com/inconshreveable/go-update v0.0.0-20160112193335-8152e7eb6ccf
 	github.com/mdlayher/wol v0.0.0-20220221231636-b763a792253a
 	github.com/prometheus/client_golang v1.23.2
+	github.com/sergi/go-diff v1.4.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.21.0
 )

@@ -12,18 +12,27 @@ import (
 	"github.com/Stoufiler/JellyWolProxy/internal/middlewares"
 	"github.com/Stoufiler/JellyWolProxy/internal/server_state"
 	"github.com/Stoufiler/JellyWolProxy/internal/services"
+	"github.com/Stoufiler/JellyWolProxy/internal/upgrade"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
+const version = "0.0.1" // This will be replaced by the build process
+
 func main() {
 	log := logger.InitLogger("Info")
 
+	upgradeFlag := flag.Bool("upgrade", false, "Upgrade the application")
 	logLevelFlag := flag.String("log-level", "", "Log level (e.g., Debug, Info, Warn, Error)")
 	configPath := flag.String("config", "config.json", "path to config file")
 	port := flag.Int("port", 3881, "port to run the server on")
 	flag.Parse()
+
+	if *upgradeFlag {
+		upgrade.RunUpgrade(version)
+		return
+	}
 
 	viper.SetConfigFile(*configPath)
 	viper.AutomaticEnv()
