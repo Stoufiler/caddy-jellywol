@@ -13,6 +13,7 @@ import (
 	"github.com/Stoufiler/JellyWolProxy/internal/server_state"
 	"github.com/Stoufiler/JellyWolProxy/internal/services"
 	"github.com/Stoufiler/JellyWolProxy/internal/upgrade"
+	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -84,25 +85,22 @@ func main() {
 	waker := &services.ConcreteWaker{}
 	waiter := &services.ConcreteServerWaiter{}
 
-	mux := http.NewServeMux()
+	r := mux.NewRouter()
 
-	mux.HandleFunc("/health", health.HealthHandler)
-	mux.HandleFunc("/health/ready", health.ReadinessHandler(log, &cfg, checker))
-	mux.Handle("/metrics", promhttp.Handler())
+	r.HandleFunc("/health", health.HealthHandler)
+	r.HandleFunc("/health/ready", health.ReadinessHandler(log, &cfg, checker))
+	r.Handle("/metrics", promhttp.Handler())
+	r.HandleFunc("/ping", handlers.PingHandler)
 
 	mainHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		handlers.Handler(w, r, log, cfg, serverState, checker, waker, waiter)
 	})
 
-	mux.Handle("/", middlewares.MetricsMiddleware(
+	r.PathPrefix("/").Handler(middlewares.MetricsMiddleware(
 		middlewares.RequestLoggerMiddleware(log, mainHandler),
 	))
 
-	mux.HandleFunc("/ping", handlers.PingHandler)
-
-	loggedMux := middlewares.RequestLoggerMiddleware(log, mux)
-
 	serverAddress := fmt.Sprintf(":%d", *port)
 	log.Infof("Starting app on port %d..", *port)
-	log.Fatal(http.ListenAndServe(serverAddress, loggedMux))
+	log.Fatal(http.ListenAndServe(serverAddress, r))
 }

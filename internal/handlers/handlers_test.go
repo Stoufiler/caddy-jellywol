@@ -10,6 +10,7 @@ import (
 
 	"github.com/Stoufiler/JellyWolProxy/internal/config"
 	"github.com/Stoufiler/JellyWolProxy/internal/server_state"
+	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 )
 
@@ -135,7 +136,11 @@ func TestHandler(t *testing.T) {
 		waiter := &mockServerWaiter{}
 		serverState := &server_state.ServerState{}
 
-		Handler(rr, req, logger, baseConfig, serverState, checker, waker, waiter)
+		router := mux.NewRouter()
+		router.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			Handler(w, r, logger, baseConfig, serverState, checker, waker, waiter)
+		})
+		router.ServeHTTP(rr, req)
 
 		if waker.called {
 			t.Error("WakeServer should not be called for non-wakeup endpoint")
@@ -155,7 +160,11 @@ func TestHandler(t *testing.T) {
 		waiter := &mockServerWaiter{}
 		serverState := &server_state.ServerState{}
 
-		Handler(rr, req, logger, baseConfig, serverState, checker, waker, waiter)
+		router := mux.NewRouter()
+		router.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			Handler(w, r, logger, baseConfig, serverState, checker, waker, waiter)
+		})
+		router.ServeHTTP(rr, req)
 
 		if waker.called {
 			t.Error("WakeServer should not be called when server is already up")
@@ -175,7 +184,11 @@ func TestHandler(t *testing.T) {
 		waiter := &mockServerWaiter{willSucceed: true}
 		serverState := &server_state.ServerState{}
 
-		Handler(rr, req, logger, baseConfig, serverState, checker, waker, waiter)
+		router := mux.NewRouter()
+		router.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			Handler(w, r, logger, baseConfig, serverState, checker, waker, waiter)
+		})
+		router.ServeHTTP(rr, req)
 
 		if !waker.called {
 			t.Error("WakeServer should be called when server is down")
@@ -195,7 +208,11 @@ func TestHandler(t *testing.T) {
 		waiter := &mockServerWaiter{willSucceed: false}
 		serverState := &server_state.ServerState{}
 
-		Handler(rr, req, logger, baseConfig, serverState, checker, waker, waiter)
+		router := mux.NewRouter()
+		router.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			Handler(w, r, logger, baseConfig, serverState, checker, waker, waiter)
+		})
+		router.ServeHTTP(rr, req)
 
 		if !waker.called {
 			t.Error("WakeServer should have been called")
