@@ -54,7 +54,7 @@ release: ## Create a new release (usage: make release VERSION=v1.0.0)
 		exit 1; \
 	fi
 	@echo "Creating new release $(VERSION)..."
-	@git tag -a $(VERSION) -m "Release $(VERSION)"
+	@git tag -a $(VERSION) -m "$(VERSION)"
 	@git push origin $(VERSION)
 	@echo "Release $(VERSION) created and pushed. GitHub Actions will build and publish the release."
 
