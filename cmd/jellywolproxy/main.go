@@ -102,5 +102,11 @@ func main() {
 
 	serverAddress := fmt.Sprintf(":%d", *port)
 	log.Infof("Starting app on port %d..", *port)
-	log.Fatal(http.ListenAndServe(serverAddress, r))
+
+	srv := &http.Server{
+		Addr:    serverAddress,
+		Handler: r,
+	}
+
+	log.Fatal(srv.ListenAndServe())
 }
