@@ -34,7 +34,7 @@ type mockServerWaiter struct {
 	willSucceed bool
 }
 
-func (m *mockServerWaiter) WaitServerOnline(logger *logrus.Logger, serverAddress string, config *config.Config) bool {
+func (m *mockServerWaiter) WaitServerOnline(logger *logrus.Logger, serverAddress string, config *config.Config, w http.ResponseWriter) bool {
 	return m.willSucceed
 }
 

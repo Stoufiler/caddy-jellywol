@@ -15,5 +15,5 @@ type ServerStateChecker interface {
 }
 
 type ServerWaiter interface {
-	WaitServerOnline(logger *logrus.Logger, serverAddress string, config *config.Config) bool
+	WaitServerOnline(logger *logrus.Logger, serverAddress string, config *config.Config, w http.ResponseWriter) bool
 }

@@ -26,6 +26,6 @@ func (c *ConcreteServerStateChecker) IsServerUp(logger *logrus.Logger, address s
 // ConcreteServerWaiter implements the ServerWaiter interface.
 type ConcreteServerWaiter struct{}
 
-func (w *ConcreteServerWaiter) WaitServerOnline(logger *logrus.Logger, serverAddress string, config *config.Config) bool {
-	return server.WaitServerOnline(logger, serverAddress, config)
+func (w *ConcreteServerWaiter) WaitServerOnline(logger *logrus.Logger, serverAddress string, config *config.Config, rw http.ResponseWriter) bool {
+	return server.WaitServerOnline(logger, serverAddress, config, rw)
 }

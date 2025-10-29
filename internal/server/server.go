@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func WaitServerOnline(logger *logrus.Logger, serverAddress string, config *config.Config) bool {
+func WaitServerOnline(logger *logrus.Logger, serverAddress string, config *config.Config, w http.ResponseWriter) bool {
 	timeoutDuration := time.Duration(config.ServerWakeUpTimeout) * time.Second
 	if config.ServerWakeUpTimeout == 0 {
 		timeoutDuration = 2 * time.Minute
@@ -23,9 +23,15 @@ func WaitServerOnline(logger *logrus.Logger, serverAddress string, config *confi
 	ticker := time.NewTicker(tickerDuration)
 	defer ticker.Stop()
 
+	flusher, ok := w.(http.Flusher)
+
 	for {
 		select {
 		case <-ticker.C:
+			if ok {
+				w.WriteHeader(http.StatusProcessing)
+				flusher.Flush()
+			}
 			if util.IsServerUp(logger, serverAddress) {
 				logger.Info("Server is up !")
 				jellyfin.SendJellyfinMessagesToAllSessions(logger, config.JellyfinUrl, config.ApiKey, "Information ", "\nLe serveur est démarré !\nBon film !")

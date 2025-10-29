@@ -38,7 +38,7 @@ func Handler(w http.ResponseWriter, r *http.Request, logger *logrus.Logger, conf
 				logger.Info("Server is waking up, waiting for it to be online...")
 			}
 
-			if waiter.WaitServerOnline(logger, serverAddress, &config) {
+			if waiter.WaitServerOnline(logger, serverAddress, &config, w) {
 				logger.Info("Server is now online, proxying request")
 				handleDomainProxy(w, r, config)
 			} else {
