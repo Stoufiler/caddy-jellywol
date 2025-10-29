@@ -106,6 +106,10 @@ This project uses [Renovate](https://github.com/renovatebot/renovate) to automat
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
+## Coded with Gemini
+
+This entire project was coded using Google's Gemini. I have only provided the prompts and Gemini has done the rest.
+
 ## License
 
 This project is licensed under the GPL License.
