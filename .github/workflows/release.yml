@@ -7,9 +7,35 @@ permissions:
   contents: write
 
 jobs:
-  release:
-    name: Create Release and Upload Assets
+  create-release:
+    name: Create Release
     runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: "Initial release"
+          draft: false
+          prerelease: false
+
+  build-and-upload:
+    name: Build and Upload Assets
+    needs: create-release
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [linux, windows, darwin]
+        goarch: [amd64, arm64]
+        exclude:
+          - goos: windows
+            goarch: arm64
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -20,10 +46,18 @@ jobs:
           go-version-file: 'go.mod'
 
       - name: Build binary
-        run: go build -o jelly-wol-proxy ./cmd/jellywolproxy
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          go build -o jelly-wol-proxy-${{ matrix.goos }}-${{ matrix.goarch }} ./cmd/jellywolproxy
 
-      - name: Create Release and Upload Asset
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release create ${{ github.ref }} ./jelly-wol-proxy --generate-notes
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./jelly-wol-proxy-${{ matrix.goos }}-${{ matrix.goarch }}
+          asset_name: jelly-wol-proxy-${{ matrix.goos }}-${{ matrix.goarch }}
+          asset_content_type: application/octet-stream
