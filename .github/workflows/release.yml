@@ -20,13 +20,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          body: "Initial release"
-          draft: false
-          prerelease: false
+          release_name: ${{ github.ref }}
+          generate_release_notes: true
 
   build-and-upload:
-    name: Build and Upload Assets
+    name: Build for ${{ matrix.goos }}/${{ matrix.goarch }}
     needs: create-release
     runs-on: ubuntu-latest
     strategy:
