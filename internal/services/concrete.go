@@ -1,6 +1,7 @@
 package services
 
 import (
+	"net/http"
 	"github.com/StephanGR/JellyWolProxy/internal/config"
 	"github.com/StephanGR/JellyWolProxy/internal/server"
 	"github.com/StephanGR/JellyWolProxy/internal/server_state"
