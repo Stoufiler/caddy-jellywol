@@ -27,7 +27,13 @@ func main() {
 	logLevelFlag := flag.String("log-level", "", "Log level (e.g., Debug, Info, Warn, Error)")
 	configPath := flag.String("config", "config.json", "path to config file")
 	port := flag.Int("port", 3881, "port to run the server on")
+	versionFlag := flag.Bool("version", false, "Print the current version")
 	flag.Parse()
+
+	if *versionFlag {
+		fmt.Println(version)
+		return
+	}
 
 	if *upgradeFlag {
 		upgrade.RunUpgrade(version)

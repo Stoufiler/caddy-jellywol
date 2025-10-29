@@ -117,7 +117,7 @@ var (
 	githubAPIURL   = "https://api.github.com/repos/Stoufiler/JellyWolProxy/releases/latest"
 	applyUpdate    = update.Apply
 	getDownloadURL = func(version string) (string, error) {
-		return fmt.Sprintf("https://github.com/Stoufiler/JellyWolProxy/releases/download/%s/jellywolproxy_%s_%s", version, runtime.GOOS, runtime.GOARCH), nil
+		return fmt.Sprintf("https://github.com/Stoufiler/JellyWolProxy/releases/download/%s/jelly-wol-proxy-%s-%s", version, runtime.GOOS, runtime.GOARCH), nil
 	}
 	getconfigDownloadURL = func(version string) (string, error) {
 		return fmt.Sprintf("https://github.com/Stoufiler/JellyWolProxy/releases/download/%s/config.json.example", version), nil
