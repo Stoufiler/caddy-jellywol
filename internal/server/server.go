@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/Stoufiler/JellyWolProxy/internal/config"
-	"github.com/Stoufiler/JellyWolProxy/internal/jellyfin"
 	"github.com/Stoufiler/JellyWolProxy/internal/util"
 	"github.com/sirupsen/logrus"
 )
@@ -35,7 +34,10 @@ func WaitServerOnline(logger *logrus.Logger, serverAddress string, config *confi
 			}
 			if util.IsServerUp(logger, serverAddress) {
 				logger.Info("Server is up !")
-				jellyfin.SendJellyfinMessagesToAllSessions(logger, config.JellyfinUrl, config.ApiKey, "Information ", "\nLe serveur est démarré !\nBon film !")
+				if config.PostPingDelaySeconds > 0 {
+					logger.Infof("Waiting for %d seconds as configured...", config.PostPingDelaySeconds)
+					time.Sleep(time.Duration(config.PostPingDelaySeconds) * time.Second)
+				}
 				return true
 			}
 		case <-timeout:

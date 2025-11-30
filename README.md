@@ -58,6 +58,7 @@ Create a `config.json` file by copying the `config.json.example` and filling in 
   ],
   "serverWakeUpTimeout": 120,
   "serverWakeUpTicker": 5,
+  "postPingDelaySeconds": 0,
   "logLevel": "Info"
 }
 ```
@@ -75,6 +76,7 @@ Create a `config.json` file by copying the `config.json.example` and filling in 
 - `wakeUpEndpoints`: List of URL paths that will trigger a server wake-up.
 - `serverWakeUpTimeout`: (Optional) The maximum time in seconds to wait for the server to come online. Defaults to `120`.
 - `serverWakeUpTicker`: (Optional) The interval in seconds at which to check if the server is online during wake-up. Defaults to `5`.
+- `postPingDelaySeconds`: (Optional) The delay in seconds to wait after the server is confirmed to be online before proxying requests. Defaults to `0`.
 - `logLevel`: (Optional) The logging level. Can be `Debug`, `Info`, `Warn`, or `Error`. Defaults to `Info`. Can be overridden by the `--log-level` command-line flag.
 
 ## How It Works

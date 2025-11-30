@@ -4,7 +4,6 @@ import (
 	"net"
 
 	"github.com/Stoufiler/JellyWolProxy/internal/config"
-	"github.com/Stoufiler/JellyWolProxy/internal/jellyfin"
 	"github.com/Stoufiler/JellyWolProxy/internal/server_state"
 	"github.com/mdlayher/wol"
 	"github.com/sirupsen/logrus"
@@ -15,8 +14,6 @@ func WakeServer(logger *logrus.Logger, macAddress string, broadcastAddress strin
 		logger.Info("There is already a wake up in progress")
 		return false
 	}
-
-	jellyfin.SendJellyfinMessagesToAllSessions(logger, config.JellyfinUrl, config.ApiKey, "Veuillez patienter ", "\nLe serveur démarre...")
 
 	client, err := wol.NewClient()
 	if err != nil {

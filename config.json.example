@@ -13,6 +13,7 @@
   ],
   "serverWakeUpTimeout": 120,
   "serverWakeUpTicker": 5,
-  "logLevel": "Info"
+  "postPingDelaySeconds": 0,
+  "logLevel": "Info",
   "logFile": ""
 }
