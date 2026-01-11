@@ -36,7 +36,18 @@ func WaitServerOnline(logger *logrus.Logger, serverAddress string, config *confi
 				logger.Info("Server is up !")
 				if config.PostPingDelaySeconds > 0 {
 					logger.Infof("Waiting for %d seconds as configured...", config.PostPingDelaySeconds)
-					time.Sleep(time.Duration(config.PostPingDelaySeconds) * time.Second)
+					delayDeadline := time.Now().Add(time.Duration(config.PostPingDelaySeconds) * time.Second)
+					for time.Now().Before(delayDeadline) {
+						select {
+						case <-ticker.C:
+							if ok {
+								w.WriteHeader(http.StatusProcessing)
+								flusher.Flush()
+							}
+						case <-time.After(time.Until(delayDeadline)):
+							// Wait finished
+						}
+					}
 				}
 				return true
 			}

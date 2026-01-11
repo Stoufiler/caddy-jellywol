@@ -194,8 +194,8 @@ func TestHandler(t *testing.T) {
 			t.Error("WakeServer should be called when server is down")
 		}
 
-		if rr.Code != http.StatusOK {
-			t.Errorf("expected status %d, got %d", http.StatusOK, rr.Code)
+		if rr.Code != http.StatusProcessing {
+			t.Errorf("expected status %d, got %d", http.StatusProcessing, rr.Code)
 		}
 	})
 
@@ -218,8 +218,8 @@ func TestHandler(t *testing.T) {
 			t.Error("WakeServer should have been called")
 		}
 
-		if rr.Code != http.StatusGatewayTimeout {
-			t.Errorf("expected status %d, got %d", http.StatusGatewayTimeout, rr.Code)
+		if rr.Code != http.StatusProcessing {
+			t.Errorf("expected status %d, got %d", http.StatusProcessing, rr.Code)
 		}
 	})
 }
