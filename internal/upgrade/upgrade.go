@@ -89,16 +89,19 @@ func doUpgrade(latestVersion string) error {
 		return err
 	}
 
+	// Try to download and compare config.json.example (optional)
 	configDownloadURL, err := getconfigDownloadURL(latestVersion)
 	if err != nil {
-		return err
+		fmt.Printf("Warning: could not get config download URL: %v\n", err)
+		return nil
 	}
 
 	fmt.Printf("Downloading from %s...\n", configDownloadURL)
 
 	configResp, err := http.Get(configDownloadURL)
 	if err != nil {
-		return err
+		fmt.Printf("Warning: could not download config file: %v\n", err)
+		return nil
 	}
 	defer func() {
 		if err := configResp.Body.Close(); err != nil {
@@ -107,10 +110,15 @@ func doUpgrade(latestVersion string) error {
 	}()
 
 	if configResp.StatusCode != http.StatusOK {
-		return fmt.Errorf("unexpected status code: %d", configResp.StatusCode)
+		fmt.Printf("Warning: config file not found in release (status %d)\n", configResp.StatusCode)
+		return nil
 	}
 
-	return compareConfigs(configResp.Body)
+	if err := compareConfigs(configResp.Body); err != nil {
+		fmt.Printf("Warning: could not compare configs: %v\n", err)
+	}
+
+	return nil
 }
 
 var (
