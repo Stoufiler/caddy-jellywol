@@ -59,26 +59,22 @@ func Handler(w http.ResponseWriter, r *http.Request, logger *logrus.Logger, conf
 		serverAddress := fmt.Sprintf("%s:%d", config.WakeUpIp, config.WakeUpPort)
 		logger.Debug("Wake-up endpoint matched, checking server status...")
 		if !checker.IsServerUp(logger, serverAddress) {
-			// Send 102 Processing to tell the client to wait
-			if flusher, ok := w.(http.Flusher); ok {
-				w.WriteHeader(http.StatusProcessing)
-				flusher.Flush()
-			}
-
+			// Server is down - trigger WOL asynchronously and return 503 for immediate retry
 			if waker.WakeServer(logger, config.MacAddress, config.BroadcastAddress, config, serverState) {
-				defer serverState.DoneWakingUp()
-				logger.Info("Server is offline, trying to wake up using Wake On Lan")
+				// WOL packet sent, start background wake process
+				go func() {
+					defer serverState.DoneWakingUp()
+					logger.Info("Server is offline, Wake On LAN packet sent")
+				}()
 			} else {
-				logger.Info("Server is waking up, waiting for it to be online...")
+				logger.Info("Server is already waking up...")
 			}
 
-			if waiter.WaitServerOnline(logger, serverAddress, &config, w) {
-				logger.Info("Server is now online, proxying request")
-				handleDomainProxy(w, r, config)
-			} else {
-				logger.Error("Timeout reached, server did not wake up. Aborting request.")
-				http.Error(w, "Server did not come online in time", http.StatusGatewayTimeout)
-			}
+			// Return 503 Service Unavailable with Retry-After header
+			// This allows clients (Infuse, Jellyfin) to automatically retry
+			w.Header().Set("Retry-After", "30")
+			http.Error(w, "Server is waking up, please retry in 30 seconds", http.StatusServiceUnavailable)
+			return
 		} else {
 			logger.Debug("Server is already online, handling domain proxy...")
 			handleDomainProxy(w, r, config)

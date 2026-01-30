@@ -194,8 +194,12 @@ func TestHandler(t *testing.T) {
 			t.Error("WakeServer should be called when server is down")
 		}
 
-		if rr.Code != http.StatusProcessing {
-			t.Errorf("expected status %d, got %d", http.StatusProcessing, rr.Code)
+		if rr.Code != http.StatusServiceUnavailable {
+			t.Errorf("expected status %d, got %d", http.StatusServiceUnavailable, rr.Code)
+		}
+
+		if retryAfter := rr.Header().Get("Retry-After"); retryAfter != "30" {
+			t.Errorf("expected Retry-After: 30, got: %s", retryAfter)
 		}
 	})
 
@@ -218,8 +222,12 @@ func TestHandler(t *testing.T) {
 			t.Error("WakeServer should have been called")
 		}
 
-		if rr.Code != http.StatusProcessing {
-			t.Errorf("expected status %d, got %d", http.StatusProcessing, rr.Code)
+		if rr.Code != http.StatusServiceUnavailable {
+			t.Errorf("expected status %d, got %d", http.StatusServiceUnavailable, rr.Code)
+		}
+
+		if retryAfter := rr.Header().Get("Retry-After"); retryAfter != "30" {
+			t.Errorf("expected Retry-After: 30, got: %s", retryAfter)
 		}
 	})
 }
