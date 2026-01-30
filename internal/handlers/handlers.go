@@ -14,14 +14,42 @@ import (
 )
 
 func handleDomainProxy(w http.ResponseWriter, r *http.Request, config config.Config) {
-	proxy := httputil.NewSingleHostReverseProxy(&url.URL{
+	targetURL := &url.URL{
 		Scheme: "http",
 		Host:   fmt.Sprintf("%s:%d", config.ForwardIp, config.ForwardPort),
-	})
+	}
 
-	r.URL.Host = fmt.Sprintf("%s:%d", config.ForwardIp, config.ForwardPort)
-	r.URL.Scheme = "http"
-	r.Host = fmt.Sprintf("%s:%d", config.ForwardIp, config.ForwardPort)
+	proxy := httputil.NewSingleHostReverseProxy(targetURL)
+
+	// Capturer l'hôte original de la requête pour réécrire les redirections
+	originalHost := r.Host
+	if originalHost == "" {
+		originalHost = r.Header.Get("Host")
+	}
+
+	// Modifier les headers de la requête
+	originalDirector := proxy.Director
+	proxy.Director = func(req *http.Request) {
+		originalDirector(req)
+		req.Host = targetURL.Host
+	}
+
+	// Modifier la réponse pour réécrire les redirections Location
+	proxy.ModifyResponse = func(resp *http.Response) error {
+		if location := resp.Header.Get("Location"); location != "" {
+			// Remplacer l'IP locale par l'hôte original
+			if parsedLocation, err := url.Parse(location); err == nil {
+				// Si la redirection pointe vers l'IP locale, la remplacer
+				if parsedLocation.Host == fmt.Sprintf("%s:%d", config.ForwardIp, config.ForwardPort) {
+					parsedLocation.Host = originalHost
+					parsedLocation.Scheme = "http"
+					resp.Header.Set("Location", parsedLocation.String())
+				}
+			}
+		}
+		return nil
+	}
+
 	proxy.ServeHTTP(w, r)
 }
 
