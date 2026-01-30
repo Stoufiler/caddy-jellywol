@@ -78,6 +78,26 @@ Create a `config.json` file by copying the `config.json.example` and filling in 
 - `serverWakeUpTicker`: (Optional) The interval in seconds at which to check if the server is online during wake-up. Defaults to `5`.
 - `postPingDelaySeconds`: (Optional) The delay in seconds to wait after the server is confirmed to be online before proxying requests. Defaults to `0`.
 - `logLevel`: (Optional) The logging level. Can be `Debug`, `Info`, `Warn`, or `Error`. Defaults to `Info`. Can be overridden by the `--log-level` command-line flag.
+- `cacheEnabled`: (Optional) Enable response caching for improved performance. Defaults to `false`.
+- `cacheTTLSeconds`: (Optional) Cache time-to-live in seconds. Defaults to `300` (5 minutes).
+
+### Environment Variables
+
+For enhanced security, sensitive configuration values can be provided via environment variables instead of storing them in the config file:
+
+- `JELLYFIN_API_KEY`: Overrides the `apiKey` configuration
+- `SERVER_MAC_ADDRESS`: Overrides the `macAddress` configuration
+- `JELLYFIN_URL`: Overrides the `jellyfinUrl` configuration
+
+**Example:**
+
+```bash
+export JELLYFIN_API_KEY="your-secret-api-key"
+export SERVER_MAC_ADDRESS="50:91:e3:c9:37:18"
+./jellywolproxy --config config.json
+```
+
+Environment variables take precedence over values in the config file.
 
 ## How It Works
 
@@ -86,6 +106,28 @@ Create a `config.json` file by copying the `config.json.example` and filling in 
 3.  The proxy then holds the request and waits for the server to become available, periodically checking its status.
 4.  Once the server is online, the original request is forwarded to it.
 5.  All subsequent requests are forwarded directly to the Jellyfin server.
+
+## Advanced Features
+
+### Response Caching
+
+JellyWolProxy includes an optional response caching layer to improve performance and reduce load on your Jellyfin server. When enabled:
+
+- GET requests are cached for the configured TTL (Time-To-Live)
+- Streaming endpoints (`.m3u8`, `.ts`, `/stream`) are automatically excluded from caching
+- Cache status is indicated via the `X-Cache` header (`HIT` or `MISS`)
+
+To enable caching, set `cacheEnabled: true` in your configuration and optionally adjust `cacheTTLSeconds` (default: 300 seconds).
+
+### Graceful Shutdown
+
+The proxy handles shutdown signals (`SIGINT`, `SIGTERM`) gracefully:
+
+- Stops accepting new connections
+- Waits up to 30 seconds for active requests to complete
+- Ensures no requests are dropped during deployment or restart
+
+Simply send a termination signal (e.g., `Ctrl+C` or `kill`) and the proxy will shutdown cleanly.
 
 ## Monitoring
 

@@ -14,7 +14,7 @@ func MetricsMiddleware(next http.Handler) http.Handler {
 		start := time.Now()
 
 		// Create a custom response writer to capture the status code
-		rw := &responseWriter{w, http.StatusOK}
+		rw := &metricsResponseWriter{w, http.StatusOK}
 
 		// Call the next handler
 		next.ServeHTTP(rw, r)
@@ -26,13 +26,13 @@ func MetricsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// responseWriter is a custom response writer that captures the status code
-type responseWriter struct {
+// metricsResponseWriter is a custom response writer that captures the status code
+type metricsResponseWriter struct {
 	http.ResponseWriter
 	statusCode int
 }
 
-func (rw *responseWriter) WriteHeader(code int) {
+func (rw *metricsResponseWriter) WriteHeader(code int) {
 	rw.statusCode = code
 	rw.ResponseWriter.WriteHeader(code)
 }

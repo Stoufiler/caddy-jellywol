@@ -20,6 +20,8 @@ type Config struct {
 	PostPingDelaySeconds int      `mapstructure:"postPingDelaySeconds"`
 	LogLevel             string   `mapstructure:"logLevel"`
 	LogFile              string   `mapstructure:"logFile"`
+	CacheEnabled         bool     `mapstructure:"cacheEnabled"`
+	CacheTTLSeconds      int      `mapstructure:"cacheTTLSeconds"`
 }
 
 func (c *Config) Validate() error {

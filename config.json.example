@@ -15,5 +15,7 @@
   "serverWakeUpTicker": 5,
   "postPingDelaySeconds": 0,
   "logLevel": "Info",
-  "logFile": ""
+  "logFile": "",
+  "cacheEnabled": false,
+  "cacheTTLSeconds": 300
 }

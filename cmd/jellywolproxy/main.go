@@ -1,10 +1,16 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
+	"github.com/Stoufiler/JellyWolProxy/internal/cache"
 	"github.com/Stoufiler/JellyWolProxy/internal/config"
 	"github.com/Stoufiler/JellyWolProxy/internal/handlers"
 	"github.com/Stoufiler/JellyWolProxy/internal/health"
@@ -44,10 +50,16 @@ func main() {
 	viper.SetConfigFile(*configPath)
 	viper.AutomaticEnv()
 
-	var cfg config.Config
+	// Set environment variable bindings for sensitive data
+	_ = viper.BindEnv("apiKey", "JELLYFIN_API_KEY")
+	_ = viper.BindEnv("macAddress", "SERVER_MAC_ADDRESS")
+	_ = viper.BindEnv("jellyfinUrl", "JELLYFIN_URL")
+
 	if err := viper.ReadInConfig(); err != nil {
-		log.Warnf("Error reading config file: %v", err)
+		log.Fatalf("Error reading config file: %v", err)
 	}
+
+	var cfg config.Config
 	if err := viper.Unmarshal(&cfg); err != nil {
 		log.Fatalf("Unable to decode into struct: %v", err)
 	}
@@ -85,6 +97,19 @@ func main() {
 	waker := &services.ConcreteWaker{}
 	waiter := &services.ConcreteServerWaiter{}
 
+	// Initialize cache if enabled
+	var responseCache *cache.ResponseCache
+	if cfg.CacheEnabled {
+		cacheTTL := time.Duration(cfg.CacheTTLSeconds) * time.Second
+		if cfg.CacheTTLSeconds <= 0 {
+			cacheTTL = 5 * time.Minute // Default 5 minutes
+		}
+		responseCache = cache.NewResponseCache(cacheTTL)
+		log.Infof("Response cache enabled with TTL of %v", cacheTTL)
+	} else {
+		log.Info("Response cache disabled")
+	}
+
 	r := mux.NewRouter()
 
 	r.HandleFunc("/health", health.HealthHandler)
@@ -96,9 +121,15 @@ func main() {
 		handlers.Handler(w, r, log, cfg, serverState, checker, waker, waiter)
 	})
 
-	r.PathPrefix("/").Handler(middlewares.MetricsMiddleware(
-		middlewares.RequestLoggerMiddleware(log, mainHandler),
-	))
+	// Apply middlewares conditionally
+	var wrappedHandler http.Handler = mainHandler
+	wrappedHandler = middlewares.RequestLoggerMiddleware(log, wrappedHandler)
+	if responseCache != nil {
+		wrappedHandler = middlewares.CacheMiddleware(log, responseCache, wrappedHandler)
+	}
+	wrappedHandler = middlewares.MetricsMiddleware(wrappedHandler)
+
+	r.PathPrefix("/").Handler(wrappedHandler)
 
 	serverAddress := fmt.Sprintf(":%d", *port)
 	log.Infof("Starting app on port %d..", *port)
@@ -108,5 +139,31 @@ func main() {
 		Handler: r,
 	}
 
-	log.Fatal(srv.ListenAndServe())
+	// Channel to listen for interrupt signals
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
+
+	// Run server in a goroutine
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Server error: %v", err)
+		}
+	}()
+
+	log.Info("Server started successfully, waiting for shutdown signal...")
+
+	// Wait for interrupt signal
+	<-stop
+	log.Info("Shutdown signal received, starting graceful shutdown...")
+
+	// Create a context with timeout for graceful shutdown
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Attempt graceful shutdown
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Errorf("Server forced to shutdown: %v", err)
+	} else {
+		log.Info("Server stopped gracefully")
+	}
 }
