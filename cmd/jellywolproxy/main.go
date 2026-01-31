@@ -188,6 +188,7 @@ func main() {
 	if responseCache != nil {
 		wrappedHandler = middlewares.CacheMiddleware(log, responseCache, wrappedHandler)
 	}
+	wrappedHandler = middlewares.NetworkStatsMiddleware(wrappedHandler)
 	wrappedHandler = middlewares.MetricsMiddleware(wrappedHandler)
 	r.PathPrefix("/").Handler(wrappedHandler)
 
