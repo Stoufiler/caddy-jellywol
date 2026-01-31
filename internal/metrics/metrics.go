@@ -48,4 +48,20 @@ var (
 		},
 		[]string{"path", "method"},
 	)
+
+	// CacheHitsTotal counts cache hits
+	CacheHitsTotal = promauto.NewCounter(
+		prometheus.CounterOpts{
+			Name: "jellywolproxy_cache_hits_total",
+			Help: "Total number of cache hits",
+		},
+	)
+
+	// CacheMissesTotal counts cache misses
+	CacheMissesTotal = promauto.NewCounter(
+		prometheus.CounterOpts{
+			Name: "jellywolproxy_cache_misses_total",
+			Help: "Total number of cache misses",
+		},
+	)
 )

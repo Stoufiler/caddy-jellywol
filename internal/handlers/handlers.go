@@ -10,13 +10,26 @@ import (
 	"github.com/Stoufiler/JellyWolProxy/internal/server_state"
 	"github.com/Stoufiler/JellyWolProxy/internal/services"
 	"github.com/Stoufiler/JellyWolProxy/internal/util"
+	"github.com/Stoufiler/JellyWolProxy/internal/websocket"
 	"github.com/sirupsen/logrus"
 )
 
-func handleDomainProxy(w http.ResponseWriter, r *http.Request, config config.Config) {
+func handleDomainProxy(w http.ResponseWriter, r *http.Request, cfg config.Config, logger *logrus.Logger) {
+	targetHost := fmt.Sprintf("%s:%d", cfg.ForwardIp, cfg.ForwardPort)
+
+	// Handle WebSocket connections specially
+	if websocket.IsWebSocketRequest(r) {
+		logger.Debug("WebSocket upgrade request detected, proxying WebSocket connection")
+		if err := websocket.ProxyWebSocket(w, r, targetHost, logger); err != nil {
+			logger.Errorf("WebSocket proxy error: %v", err)
+			http.Error(w, "WebSocket proxy error", http.StatusBadGateway)
+		}
+		return
+	}
+
 	targetURL := &url.URL{
 		Scheme: "http",
-		Host:   fmt.Sprintf("%s:%d", config.ForwardIp, config.ForwardPort),
+		Host:   targetHost,
 	}
 
 	proxy := httputil.NewSingleHostReverseProxy(targetURL)
@@ -40,7 +53,7 @@ func handleDomainProxy(w http.ResponseWriter, r *http.Request, config config.Con
 			// Remplacer l'IP locale par l'hôte original
 			if parsedLocation, err := url.Parse(location); err == nil {
 				// Si la redirection pointe vers l'IP locale, la remplacer
-				if parsedLocation.Host == fmt.Sprintf("%s:%d", config.ForwardIp, config.ForwardPort) {
+				if parsedLocation.Host == fmt.Sprintf("%s:%d", cfg.ForwardIp, cfg.ForwardPort) {
 					parsedLocation.Host = originalHost
 					parsedLocation.Scheme = "http"
 					resp.Header.Set("Location", parsedLocation.String())
@@ -53,14 +66,14 @@ func handleDomainProxy(w http.ResponseWriter, r *http.Request, config config.Con
 	proxy.ServeHTTP(w, r)
 }
 
-func Handler(w http.ResponseWriter, r *http.Request, logger *logrus.Logger, config config.Config, serverState *server_state.ServerState, checker services.ServerStateChecker, waker services.Waker, waiter services.ServerWaiter) {
+func Handler(w http.ResponseWriter, r *http.Request, logger *logrus.Logger, cfg config.Config, serverState *server_state.ServerState, checker services.ServerStateChecker, waker services.Waker, waiter services.ServerWaiter) {
 	logger.Debug("Request received for path: ", r.URL.Path)
-	if util.ShouldWakeServer(r.URL.Path, config.WakeUpEndpoints) {
-		serverAddress := fmt.Sprintf("%s:%d", config.WakeUpIp, config.WakeUpPort)
+	if util.ShouldWakeServer(r.URL.Path, cfg.WakeUpEndpoints) {
+		serverAddress := fmt.Sprintf("%s:%d", cfg.WakeUpIp, cfg.WakeUpPort)
 		logger.Debug("Wake-up endpoint matched, checking server status...")
 		if !checker.IsServerUp(logger, serverAddress) {
 			// Server is down - trigger WOL asynchronously and return 503 for immediate retry
-			if waker.WakeServer(logger, config.MacAddress, config.BroadcastAddress, config, serverState) {
+			if waker.WakeServer(logger, cfg.MacAddress, cfg.BroadcastAddress, cfg, serverState) {
 				// WOL packet sent, start background wake process
 				go func() {
 					defer serverState.DoneWakingUp()
@@ -77,11 +90,11 @@ func Handler(w http.ResponseWriter, r *http.Request, logger *logrus.Logger, conf
 			return
 		} else {
 			logger.Debug("Server is already online, handling domain proxy...")
-			handleDomainProxy(w, r, config)
+			handleDomainProxy(w, r, cfg, logger)
 		}
 	} else {
 		logger.Debug("No wake-up endpoint matched, handling domain proxy...")
-		handleDomainProxy(w, r, config)
+		handleDomainProxy(w, r, cfg, logger)
 	}
 }
 func PingHandler(w http.ResponseWriter, r *http.Request) {

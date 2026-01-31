@@ -68,12 +68,16 @@ func TestHandleDomainProxy(t *testing.T) {
 		ForwardPort: port,
 	}
 
+	// Create a logger for the test
+	logger := logrus.New()
+	logger.SetLevel(logrus.PanicLevel)
+
 	// Create a request to proxy
 	req := httptest.NewRequest("GET", "/", nil)
 	rr := httptest.NewRecorder()
 
 	// Call the handler
-	handleDomainProxy(rr, req, cfg)
+	handleDomainProxy(rr, req, cfg, logger)
 
 	// Check the status code
 	if rr.Code != http.StatusOK {

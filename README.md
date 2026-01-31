@@ -119,6 +119,65 @@ JellyWolProxy includes an optional response caching layer to improve performance
 
 To enable caching, set `cacheEnabled: true` in your configuration and optionally adjust `cacheTTLSeconds` (default: 300 seconds).
 
+### Dashboard & Status Page
+
+JellyWolProxy includes a built-in web dashboard accessible at `/status` that provides:
+
+- **Real-time server state** (online/offline/waking)
+- **Statistics**: uptime, total requests, cache hit rate, wake-up count
+- **Live log streaming** via Server-Sent Events (SSE)
+
+#### Dashboard Endpoints
+
+- `/status` - Main dashboard page (HTML)
+- `/status/api` - JSON API for statistics
+- `/status/logs` - Live log stream (SSE)
+
+#### SSO Authentication (Optional)
+
+The dashboard can be protected with OIDC/OAuth2 authentication, compatible with providers like [Pocket-ID](https://github.com/pocket-id/pocket-id), Keycloak, Authentik, etc.
+
+To enable SSO, configure the `dashboardOIDC` section in your config:
+
+```json
+{
+  "dashboardOIDC": {
+    "enabled": true,
+    "issuer_url": "https://pocket-id.example.com",
+    "client_id": "jellywolproxy",
+    "client_secret": "your-client-secret",
+    "redirect_url": "http://your-proxy:3881/status/callback",
+    "scopes": "openid email profile"
+  }
+}
+```
+
+| Parameter | Description |
+|-----------|-------------|
+| `enabled` | Enable/disable SSO authentication |
+| `issuer_url` | OIDC provider URL (must support `.well-known/openid-configuration`) |
+| `client_id` | OAuth2 client ID |
+| `client_secret` | OAuth2 client secret |
+| `redirect_url` | Callback URL (must point to `/status/callback`) |
+| `scopes` | OAuth2 scopes to request (default: `openid email profile`) |
+
+When SSO is disabled, the dashboard is publicly accessible.
+
+### Configuration Hot-Reload
+
+JellyWolProxy supports reloading configuration without restarting the server by sending a `SIGHUP` signal:
+
+```bash
+kill -SIGHUP $(pgrep jellywolproxy)
+```
+
+The following settings can be hot-reloaded:
+- Log level
+- Cache TTL
+- Wake-up timeouts and intervals
+
+Note: Some settings (port, IP addresses, MAC address) require a full restart.
+
 ### Graceful Shutdown
 
 The proxy handles shutdown signals (`SIGINT`, `SIGTERM`) gracefully:

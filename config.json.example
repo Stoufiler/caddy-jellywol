@@ -17,5 +17,13 @@
   "logLevel": "Info",
   "logFile": "",
   "cacheEnabled": false,
-  "cacheTTLSeconds": 300
+  "cacheTTLSeconds": 300,
+  "dashboardOIDC": {
+    "enabled": false,
+    "issuer_url": "https://pocket-id.example.com",
+    "client_id": "jellywolproxy",
+    "client_secret": "your-client-secret",
+    "redirect_url": "http://localhost:3881/status/callback",
+    "scopes": "openid email profile"
+  }
 }
