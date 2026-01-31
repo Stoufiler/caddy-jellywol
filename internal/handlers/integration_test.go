@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"fmt"
-	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -30,20 +29,6 @@ func (m *integrationWaker) WakeServer(logger *logrus.Logger, macAddress string, 
 	return true
 }
 
-type integrationWaiter struct {
-	shouldWait   bool
-	waitDuration time.Duration
-}
-
-// WaitServerOnline returns false to prevent proxy attempt (which would timeout)
-func (m *integrationWaiter) WaitServerOnline(logger *logrus.Logger, serverAddress string, config *config.Config, w http.ResponseWriter) bool {
-	if m.shouldWait {
-		time.Sleep(m.waitDuration)
-	}
-	// Return false to prevent proxy attempt in tests
-	return false
-}
-
 // TestIntegrationServerAlreadyOnline tests the flow when the server is already online
 // Note: This test will attempt to proxy to an unreachable host, so we just verify wake logic
 func TestIntegrationServerAlreadyOnline(t *testing.T) {
@@ -63,13 +48,12 @@ func TestIntegrationServerAlreadyOnline(t *testing.T) {
 	serverState := &server_state.ServerState{}
 	checker := &integrationServerStateChecker{serverUp: true}
 	waker := &integrationWaker{}
-	waiter := &integrationWaiter{}
 
 	// Test request
 	req := httptest.NewRequest("GET", "/videos/test.mp4", nil)
 	rr := httptest.NewRecorder()
 
-	Handler(rr, req, log, cfg, serverState, checker, waker, waiter)
+	Handler(rr, req, log, cfg, serverState, checker, waker)
 
 	// Verify wake was NOT called since server was already up
 	if waker.wakeCalled {
@@ -98,12 +82,11 @@ func TestIntegrationServerNeedsWakeUp(t *testing.T) {
 	serverState := &server_state.ServerState{}
 	checker := &integrationServerStateChecker{serverUp: false}
 	waker := &integrationWaker{}
-	waiter := &integrationWaiter{shouldWait: true, waitDuration: 100 * time.Millisecond}
 
 	req := httptest.NewRequest("GET", "/videos/test.mp4", nil)
 	rr := httptest.NewRecorder()
 
-	Handler(rr, req, log, cfg, serverState, checker, waker, waiter)
+	Handler(rr, req, log, cfg, serverState, checker, waker)
 
 	// Verify wake WAS called
 	if !waker.wakeCalled {
@@ -133,13 +116,12 @@ func TestIntegrationNonWakeEndpoint(t *testing.T) {
 	serverState := &server_state.ServerState{}
 	checker := &integrationServerStateChecker{serverUp: false}
 	waker := &integrationWaker{}
-	waiter := &integrationWaiter{}
 
 	// Request to non-wake endpoint
 	req := httptest.NewRequest("GET", "/api/users", nil)
 	rr := httptest.NewRecorder()
 
-	Handler(rr, req, log, cfg, serverState, checker, waker, waiter)
+	Handler(rr, req, log, cfg, serverState, checker, waker)
 
 	// Wake should NOT be called for non-wake endpoints
 	if waker.wakeCalled {
@@ -174,8 +156,6 @@ func TestIntegrationConcurrentWakeRequests(t *testing.T) {
 		wakeCount: &wakeCount,
 	}
 
-	waiter := &integrationWaiter{shouldWait: true, waitDuration: 50 * time.Millisecond}
-
 	// Simulate 5 concurrent requests
 	concurrentRequests := 5
 	done := make(chan bool, concurrentRequests)
@@ -184,7 +164,7 @@ func TestIntegrationConcurrentWakeRequests(t *testing.T) {
 		go func(id int) {
 			req := httptest.NewRequest("GET", fmt.Sprintf("/videos/test%d.mp4", id), nil)
 			rr := httptest.NewRecorder()
-			Handler(rr, req, log, cfg, serverState, checker, waker, waiter)
+			Handler(rr, req, log, cfg, serverState, checker, waker)
 			done <- true
 		}(i)
 	}
@@ -239,13 +219,12 @@ func TestIntegrationStateTransition(t *testing.T) {
 	serverOnline := false
 	checker := &mockCheckerWithState{online: &serverOnline}
 	waker := &integrationWaker{}
-	waiter := &mockWaiterNoProxy{shouldReturn: true}
 
 	req := httptest.NewRequest("GET", "/videos/movie.mp4", nil)
 	rr := httptest.NewRecorder()
 
-	// This will trigger wake but won't try to proxy (waiter returns before proxy)
-	go Handler(rr, req, log, cfg, serverState, checker, waker, waiter)
+	// This will trigger wake
+	go Handler(rr, req, log, cfg, serverState, checker, waker)
 
 	// Give it a moment to start waking
 	time.Sleep(50 * time.Millisecond)
@@ -262,13 +241,4 @@ type mockCheckerWithState struct {
 
 func (m *mockCheckerWithState) IsServerUp(logger *logrus.Logger, address string) bool {
 	return *m.online
-}
-
-type mockWaiterNoProxy struct {
-	shouldReturn bool
-}
-
-func (m *mockWaiterNoProxy) WaitServerOnline(logger *logrus.Logger, serverAddress string, config *config.Config, w http.ResponseWriter) bool {
-	time.Sleep(50 * time.Millisecond)
-	return m.shouldReturn
 }

@@ -1,8 +1,6 @@
 package services
 
 import (
-	"net/http"
-
 	"github.com/Stoufiler/JellyWolProxy/internal/config"
 	"github.com/Stoufiler/JellyWolProxy/internal/server_state"
 	"github.com/sirupsen/logrus"
@@ -14,8 +12,4 @@ type Waker interface {
 
 type ServerStateChecker interface {
 	IsServerUp(logger *logrus.Logger, address string) bool
-}
-
-type ServerWaiter interface {
-	WaitServerOnline(logger *logrus.Logger, serverAddress string, config *config.Config, w http.ResponseWriter) bool
 }

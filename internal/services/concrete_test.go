@@ -53,29 +53,3 @@ func TestConcreteWaker_WakeServer(t *testing.T) {
 		}
 	})
 }
-
-func TestConcreteServerWaiter_WaitServerOnline(t *testing.T) {
-	logger := logrus.New()
-	logger.SetLevel(logrus.ErrorLevel)
-
-	t.Run("server comes online", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-		}))
-		defer server.Close()
-
-		waiter := &ConcreteServerWaiter{}
-		cfg := &config.Config{ServerWakeUpTimeout: 2, ServerWakeUpTicker: 1}
-		if !waiter.WaitServerOnline(logger, server.Listener.Addr().String(), cfg, nil) {
-			t.Error("expected server to come online")
-		}
-	})
-
-	t.Run("server does not come online", func(t *testing.T) {
-		waiter := &ConcreteServerWaiter{}
-		cfg := &config.Config{ServerWakeUpTimeout: 2, ServerWakeUpTicker: 1}
-		if waiter.WaitServerOnline(logger, "localhost:12345", cfg, nil) {
-			t.Error("expected server to not come online")
-		}
-	})
-}

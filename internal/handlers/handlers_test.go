@@ -34,14 +34,6 @@ func (m *mockWaker) WakeServer(logger *logrus.Logger, macAddress string, broadca
 	return serverState.StartWakingUp()
 }
 
-type mockServerWaiter struct {
-	willSucceed bool
-}
-
-func (m *mockServerWaiter) WaitServerOnline(logger *logrus.Logger, serverAddress string, config *config.Config, w http.ResponseWriter) bool {
-	return m.willSucceed
-}
-
 func TestHandleDomainProxy(t *testing.T) {
 	// Create a test server to act as the backend
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -137,12 +129,11 @@ func TestHandler(t *testing.T) {
 
 		checker := &mockServerStateChecker{isUp: true} // Doesn't matter for this test
 		waker := &mockWaker{}
-		waiter := &mockServerWaiter{}
 		serverState := &server_state.ServerState{}
 
 		router := mux.NewRouter()
 		router.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			Handler(w, r, logger, baseConfig, serverState, checker, waker, waiter)
+			Handler(w, r, logger, baseConfig, serverState, checker, waker)
 		})
 		router.ServeHTTP(rr, req)
 
@@ -161,12 +152,11 @@ func TestHandler(t *testing.T) {
 
 		checker := &mockServerStateChecker{isUp: true}
 		waker := &mockWaker{}
-		waiter := &mockServerWaiter{}
 		serverState := &server_state.ServerState{}
 
 		router := mux.NewRouter()
 		router.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			Handler(w, r, logger, baseConfig, serverState, checker, waker, waiter)
+			Handler(w, r, logger, baseConfig, serverState, checker, waker)
 		})
 		router.ServeHTTP(rr, req)
 
@@ -185,12 +175,11 @@ func TestHandler(t *testing.T) {
 
 		checker := &mockServerStateChecker{isUp: false}
 		waker := &mockWaker{}
-		waiter := &mockServerWaiter{willSucceed: true}
 		serverState := &server_state.ServerState{}
 
 		router := mux.NewRouter()
 		router.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			Handler(w, r, logger, baseConfig, serverState, checker, waker, waiter)
+			Handler(w, r, logger, baseConfig, serverState, checker, waker)
 		})
 		router.ServeHTTP(rr, req)
 
@@ -213,12 +202,11 @@ func TestHandler(t *testing.T) {
 
 		checker := &mockServerStateChecker{isUp: false}
 		waker := &mockWaker{}
-		waiter := &mockServerWaiter{willSucceed: false}
 		serverState := &server_state.ServerState{}
 
 		router := mux.NewRouter()
 		router.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			Handler(w, r, logger, baseConfig, serverState, checker, waker, waiter)
+			Handler(w, r, logger, baseConfig, serverState, checker, waker)
 		})
 		router.ServeHTTP(rr, req)
 

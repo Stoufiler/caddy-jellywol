@@ -169,7 +169,6 @@ func main() {
 	serverState := &server_state.ServerState{}
 	checker := &services.ConcreteServerStateChecker{}
 	waker := &services.ConcreteWaker{}
-	waiter := &services.ConcreteServerWaiter{}
 	responseCache := setupCache(log, cfg)
 
 	r := mux.NewRouter()
@@ -181,7 +180,7 @@ func main() {
 	setupDashboardRoutes(r, cfg, log, serverState)
 
 	mainHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		handlers.Handler(w, r, log, cfg, serverState, checker, waker, waiter)
+		handlers.Handler(w, r, log, cfg, serverState, checker, waker)
 	})
 
 	var wrappedHandler http.Handler = mainHandler

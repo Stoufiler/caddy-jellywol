@@ -66,7 +66,7 @@ func handleDomainProxy(w http.ResponseWriter, r *http.Request, cfg config.Config
 	proxy.ServeHTTP(w, r)
 }
 
-func Handler(w http.ResponseWriter, r *http.Request, logger *logrus.Logger, cfg config.Config, serverState *server_state.ServerState, checker services.ServerStateChecker, waker services.Waker, waiter services.ServerWaiter) {
+func Handler(w http.ResponseWriter, r *http.Request, logger *logrus.Logger, cfg config.Config, serverState *server_state.ServerState, checker services.ServerStateChecker, waker services.Waker) {
 	logger.Debug("Request received for path: ", r.URL.Path)
 	if util.ShouldWakeServer(r.URL.Path, cfg.WakeUpEndpoints) {
 		serverAddress := fmt.Sprintf("%s:%d", cfg.WakeUpIp, cfg.WakeUpPort)
@@ -88,15 +88,15 @@ func Handler(w http.ResponseWriter, r *http.Request, logger *logrus.Logger, cfg 
 			w.Header().Set("Retry-After", "30")
 			http.Error(w, "Server is waking up, please retry in 30 seconds", http.StatusServiceUnavailable)
 			return
-		} else {
-			logger.Debug("Server is already online, handling domain proxy...")
-			handleDomainProxy(w, r, cfg, logger)
 		}
+		logger.Debug("Server is already online, handling domain proxy...")
+		handleDomainProxy(w, r, cfg, logger)
 	} else {
 		logger.Debug("No wake-up endpoint matched, handling domain proxy...")
 		handleDomainProxy(w, r, cfg, logger)
 	}
 }
+
 func PingHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
