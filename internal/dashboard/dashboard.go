@@ -157,21 +157,23 @@ func (s *Stats) GetSnapshot() Stats {
 
 // StatusResponse is the JSON response for the status endpoint
 type StatusResponse struct {
-	ServerState   string    `json:"serverState"`
-	Uptime        string    `json:"uptime"`
-	StartTime     time.Time `json:"startTime"`
-	LastWakeUp    string    `json:"lastWakeUp,omitempty"`
-	LastOnline    string    `json:"lastOnline,omitempty"`
-	WakeUpCount   int64     `json:"wakeUpCount"`
-	AvgWakeUpTime float64   `json:"avgWakeUpTimeSeconds"`
-	TotalRequests int64     `json:"totalRequests"`
-	CacheHits     int64     `json:"cacheHits"`
-	CacheMisses   int64     `json:"cacheMisses"`
-	CacheHitRate  float64   `json:"cacheHitRate"`
-	BytesIn       int64     `json:"bytesIn"`
-	BytesOut      int64     `json:"bytesOut"`
-	BandwidthIn   int64     `json:"bandwidthIn"`
-	BandwidthOut  int64     `json:"bandwidthOut"`
+	ServerState   string      `json:"serverState"`
+	Uptime        string      `json:"uptime"`
+	StartTime     time.Time   `json:"startTime"`
+	LastWakeUp    string      `json:"lastWakeUp,omitempty"`
+	LastOnline    string      `json:"lastOnline,omitempty"`
+	WakeUpCount   int64       `json:"wakeUpCount"`
+	AvgWakeUpTime float64     `json:"avgWakeUpTimeSeconds"`
+	TotalRequests int64       `json:"totalRequests"`
+	CacheHits     int64       `json:"cacheHits"`
+	CacheMisses   int64       `json:"cacheMisses"`
+	CacheHitRate  float64     `json:"cacheHitRate"`
+	BytesIn       int64       `json:"bytesIn"`
+	BytesOut      int64       `json:"bytesOut"`
+	BandwidthIn   int64       `json:"bandwidthIn"`
+	BandwidthOut  int64       `json:"bandwidthOut"`
+	System        SystemInfo  `json:"system"`
+	Process       ProcessInfo `json:"process"`
 }
 
 // StatusAPIHandler returns JSON status data
@@ -213,6 +215,8 @@ func StatusAPIHandler(logger *logrus.Logger, serverState *server_state.ServerSta
 			BytesOut:      stats.BytesOut,
 			BandwidthIn:   stats.BandwidthIn,
 			BandwidthOut:  stats.BandwidthOut,
+			System:        GetSystemInfo(),
+			Process:       GetProcessInfo(stats.StartTime),
 		}
 
 		if !stats.LastWakeUp.IsZero() {
@@ -362,6 +366,43 @@ const statusPageHTML = `<!DOCTYPE html>
             <div class="card">
                 <h2>Avg Wake-up Time</h2>
                 <div class="value" id="avgWakeUpTime">-</div>
+            </div>
+        </div>
+        <div class="card" style="margin-top: 20px;">
+            <h2>System Information</h2>
+            <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                <div style="padding: 12px;">
+                    <div style="color: #888; font-size: 0.85em;">Hostname</div>
+                    <div style="font-size: 1.1em; font-weight: 600; margin-top: 4px;" id="hostname">-</div>
+                </div>
+                <div style="padding: 12px;">
+                    <div style="color: #888; font-size: 0.85em;">OS / Arch</div>
+                    <div style="font-size: 1.1em; font-weight: 600; margin-top: 4px;" id="osArch">-</div>
+                </div>
+                <div style="padding: 12px;">
+                    <div style="color: #888; font-size: 0.85em;">CPU Cores</div>
+                    <div style="font-size: 1.1em; font-weight: 600; margin-top: 4px;" id="numCPU">-</div>
+                </div>
+                <div style="padding: 12px;">
+                    <div style="color: #888; font-size: 0.85em;">Memory (Alloc / Sys)</div>
+                    <div style="font-size: 1.1em; font-weight: 600; margin-top: 4px;" id="memory">-</div>
+                </div>
+                <div style="padding: 12px;">
+                    <div style="color: #888; font-size: 0.85em;">Goroutines</div>
+                    <div style="font-size: 1.1em; font-weight: 600; margin-top: 4px;" id="goroutines">-</div>
+                </div>
+                <div style="padding: 12px;">
+                    <div style="color: #888; font-size: 0.85em;">GC Runs</div>
+                    <div style="font-size: 1.1em; font-weight: 600; margin-top: 4px;" id="gcCount">-</div>
+                </div>
+                <div style="padding: 12px;">
+                    <div style="color: #888; font-size: 0.85em;">Go Version</div>
+                    <div style="font-size: 1.1em; font-weight: 600; margin-top: 4px;" id="goVersion">-</div>
+                </div>
+                <div style="padding: 12px;">
+                    <div style="color: #888; font-size: 0.85em;">PID</div>
+                    <div style="font-size: 1.1em; font-weight: 600; margin-top: 4px;" id="pid">-</div>
+                </div>
             </div>
         </div>
         <div class="card" style="margin-top: 20px;">
@@ -519,6 +560,16 @@ const statusPageHTML = `<!DOCTYPE html>
                     bandwidthOutData.shift();
                     bandwidthOutData.push(data.bandwidthOut);
                     drawChart();
+
+                    // Update system info
+                    document.getElementById('hostname').textContent = data.system.hostname;
+                    document.getElementById('osArch').textContent = data.system.os + ' / ' + data.system.arch;
+                    document.getElementById('numCPU').textContent = data.system.numCpu + ' cores';
+                    document.getElementById('memory').textContent = data.system.memAllocMB.toFixed(1) + ' MB / ' + data.system.memSysMB.toFixed(1) + ' MB';
+                    document.getElementById('goroutines').textContent = data.system.numGoroutines.toLocaleString();
+                    document.getElementById('gcCount').textContent = data.system.gcCount.toLocaleString();
+                    document.getElementById('goVersion').textContent = data.system.goVersion;
+                    document.getElementById('pid').textContent = data.process.pid;
 
                     if (data.lastWakeUp) {
                         document.getElementById('lastWakeUp').textContent = 'Last: ' + new Date(data.lastWakeUp).toLocaleString();
