@@ -1,6 +1,8 @@
 package middlewares
 
 import (
+	"bufio"
+	"net"
 	"net/http"
 
 	"github.com/Stoufiler/JellyWolProxy/internal/dashboard"
@@ -18,6 +20,14 @@ func (w *responseWriterWrapper) Write(b []byte) (int, error) {
 	n, err := w.ResponseWriter.Write(b)
 	w.bytesWritten += int64(n)
 	return n, err
+}
+
+// Hijack implements http.Hijacker interface for WebSocket support
+func (w *responseWriterWrapper) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	if hijacker, ok := w.ResponseWriter.(http.Hijacker); ok {
+		return hijacker.Hijack()
+	}
+	return nil, nil, http.ErrNotSupported
 }
 
 func RequestLoggerMiddleware(logger *logrus.Logger, next http.Handler) http.Handler {
