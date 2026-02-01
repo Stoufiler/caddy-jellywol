@@ -1,13 +1,17 @@
 package upgrade
 
 import (
+	"archive/tar"
+	"archive/zip"
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"runtime"
+	"strings"
 
 	"github.com/inconshreveable/go-update"
 	"github.com/sergi/go-diff/diffmatchpatch"
@@ -85,7 +89,26 @@ func doUpgrade(latestVersion string) error {
 		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
-	if err := applyUpdate(resp.Body, update.Options{}); err != nil {
+	// Read archive content
+	archiveBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	// Extract binary from archive
+	var binaryReader io.Reader
+	if runtime.GOOS == "windows" {
+		// Extract from .zip
+		binaryReader, err = extractFromZip(archiveBytes)
+	} else {
+		// Extract from .tar.gz
+		binaryReader, err = extractFromTarGz(archiveBytes)
+	}
+	if err != nil {
+		return fmt.Errorf("failed to extract binary: %v", err)
+	}
+
+	if err := applyUpdate(binaryReader, update.Options{}); err != nil {
 		return err
 	}
 
@@ -121,11 +144,79 @@ func doUpgrade(latestVersion string) error {
 	return nil
 }
 
+// extractFromTarGz extracts the binary from a .tar.gz archive
+func extractFromTarGz(archiveBytes []byte) (io.Reader, error) {
+	gzr, err := gzip.NewReader(bytes.NewReader(archiveBytes))
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		_ = gzr.Close()
+	}()
+
+	tarReader := tar.NewReader(gzr)
+	for {
+		header, err := tarReader.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		// Find the binary file (should be the only file or starts with jellywolproxy)
+		if header.Typeflag == tar.TypeReg && strings.Contains(header.Name, "jellywolproxy") {
+			// Read entire binary into memory
+			buf := new(bytes.Buffer)
+			if _, err := io.Copy(buf, tarReader); err != nil {
+				return nil, err
+			}
+			return buf, nil
+		}
+	}
+
+	return nil, fmt.Errorf("binary not found in archive")
+}
+
+// extractFromZip extracts the binary from a .zip archive
+func extractFromZip(archiveBytes []byte) (io.Reader, error) {
+	zipReader, err := zip.NewReader(bytes.NewReader(archiveBytes), int64(len(archiveBytes)))
+	if err != nil {
+		return nil, err
+	}
+
+	for _, file := range zipReader.File {
+		// Find the .exe file
+		if strings.HasSuffix(file.Name, ".exe") && strings.Contains(file.Name, "jellywolproxy") {
+			rc, err := file.Open()
+			if err != nil {
+				return nil, err
+			}
+			defer func() {
+				_ = rc.Close()
+			}()
+
+			// Read entire binary into memory
+			buf := new(bytes.Buffer)
+			if _, err := io.Copy(buf, rc); err != nil {
+				return nil, err
+			}
+			return buf, nil
+		}
+	}
+
+	return nil, fmt.Errorf("binary not found in archive")
+}
+
 var (
 	githubAPIURL   = "https://api.github.com/repos/Stoufiler/JellyWolProxy/releases/latest"
 	applyUpdate    = update.Apply
 	getDownloadURL = func(version string) (string, error) {
-		return fmt.Sprintf("https://github.com/Stoufiler/JellyWolProxy/releases/download/%s/jelly-wol-proxy-%s-%s", version, runtime.GOOS, runtime.GOARCH), nil
+		archiveExt := ".tar.gz"
+		if runtime.GOOS == "windows" {
+			archiveExt = ".zip"
+		}
+		return fmt.Sprintf("https://github.com/Stoufiler/JellyWolProxy/releases/download/%s/jellywolproxy-%s-%s%s", version, runtime.GOOS, runtime.GOARCH, archiveExt), nil
 	}
 	getconfigDownloadURL = func(version string) (string, error) {
 		return fmt.Sprintf("https://github.com/Stoufiler/JellyWolProxy/releases/download/%s/config.json.example", version), nil

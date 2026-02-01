@@ -1,6 +1,9 @@
 package upgrade
 
 import (
+	"archive/tar"
+	"bytes"
+	"compress/gzip"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -77,9 +80,34 @@ func TestGetLatestVersion(t *testing.T) {
 }
 
 func TestDoUpgrade(t *testing.T) {
+	// Create a mock tar.gz archive with a binary
+	var archiveBuffer bytes.Buffer
+	gzWriter := gzip.NewWriter(&archiveBuffer)
+	tarWriter := tar.NewWriter(gzWriter)
+
+	// Add a fake binary to the archive
+	binaryContent := []byte("new binary content")
+	header := &tar.Header{
+		Name: "jellywolproxy-linux-amd64",
+		Mode: 0755,
+		Size: int64(len(binaryContent)),
+	}
+	if err := tarWriter.WriteHeader(header); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tarWriter.Write(binaryContent); err != nil {
+		t.Fatal(err)
+	}
+	if err := tarWriter.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := gzWriter.Close(); err != nil {
+		t.Fatal(err)
+	}
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		if _, err := w.Write([]byte("new binary")); err != nil {
+		if _, err := w.Write(archiveBuffer.Bytes()); err != nil {
 			t.Fatal(err)
 		}
 	}))
