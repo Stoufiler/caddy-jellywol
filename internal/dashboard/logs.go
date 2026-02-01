@@ -113,10 +113,19 @@ func (h *LogrusHook) Levels() []logrus.Level {
 
 // Fire is called when a log entry is made
 func (h *LogrusHook) Fire(entry *logrus.Entry) error {
+	message := entry.Message
+
+	// If there are fields, append them to the message
+	if len(entry.Data) > 0 {
+		for k, v := range entry.Data {
+			message += fmt.Sprintf(" %s=%v", k, v)
+		}
+	}
+
 	logEntry := LogEntry{
 		Time:    entry.Time.Format("15:04:05"),
 		Level:   entry.Level.String(),
-		Message: entry.Message,
+		Message: message,
 	}
 	h.broadcaster.Broadcast(logEntry)
 	return nil
