@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/Stoufiler/JellyWolProxy/internal/cache"
+	"github.com/Stoufiler/JellyWolProxy/internal/dashboard"
 	"github.com/sirupsen/logrus"
 )
 
@@ -58,6 +59,7 @@ func CacheMiddleware(logger *logrus.Logger, cache *cache.ResponseCache, next htt
 		// Try to get from cache
 		if entry, found := cache.Get(cacheKey); found {
 			logger.Debugf("Cache hit for %s", r.URL.Path)
+			dashboard.GetStats().RecordCacheHit()
 
 			// Write cached headers
 			for key, values := range entry.Headers {
@@ -73,6 +75,7 @@ func CacheMiddleware(logger *logrus.Logger, cache *cache.ResponseCache, next htt
 		}
 
 		logger.Debugf("Cache miss for %s", r.URL.Path)
+		dashboard.GetStats().RecordCacheMiss()
 
 		// Capture response
 		rw := newCacheResponseWriter(w)
