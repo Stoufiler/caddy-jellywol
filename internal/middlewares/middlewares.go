@@ -40,6 +40,12 @@ func RequestLoggerMiddleware(logger *logrus.Logger, next http.Handler) http.Hand
 // NetworkStatsMiddleware tracks network bytes in/out
 func NetworkStatsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Skip wrapping for WebSocket connections
+		if r.Header.Get("Upgrade") == "websocket" {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		// Track request body size (bytes in)
 		bytesIn := r.ContentLength
 		if bytesIn < 0 {
