@@ -9,56 +9,34 @@ const statusPageHTML = `<!DOCTYPE html>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: 'Courier New', monospace;
-            background: #0a0e27;
-            color: #00ff41;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: #e2e8f0;
             min-height: 100vh;
             padding: 20px;
-            background-image:
-                repeating-linear-gradient(0deg, rgba(0,255,65,0.03) 0px, transparent 1px, transparent 2px, rgba(0,255,65,0.03) 3px),
-                repeating-linear-gradient(90deg, rgba(0,255,65,0.03) 0px, transparent 1px, transparent 2px, rgba(0,255,65,0.03) 3px);
         }
-        .terminal {
-            max-width: 1800px;
+        .container {
+            max-width: 1400px;
             margin: 0 auto;
-            border: 2px solid #00ff41;
-            box-shadow: 0 0 20px rgba(0,255,65,0.3);
-            background: rgba(10,14,39,0.95);
         }
-        .terminal-header {
-            background: #00ff41;
-            color: #0a0e27;
-            padding: 8px 16px;
-            font-weight: bold;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .terminal-body { padding: 20px; }
-        .prompt { color: #00ff41; }
-        .prompt::before { content: '> '; }
         h1 {
             font-size: 2em;
-            margin-bottom: 20px;
-            text-shadow: 0 0 10px rgba(0,255,65,0.8);
-            animation: flicker 3s infinite alternate;
-        }
-        @keyframes flicker {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.95; }
+            margin-bottom: 30px;
+            color: #f1f5f9;
+            font-weight: 600;
         }
         .section {
-            margin-bottom: 30px;
-            border: 1px solid rgba(0,255,65,0.3);
-            padding: 15px;
-            background: rgba(0,255,65,0.02);
+            margin-bottom: 25px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
         }
         .section-title {
-            color: #00d9ff;
-            font-size: 1.3em;
+            color: #38bdf8;
+            font-size: 1.2em;
             margin-bottom: 15px;
-            border-bottom: 1px solid rgba(0,255,65,0.3);
-            padding-bottom: 8px;
+            font-weight: 600;
         }
         .grid {
             display: grid;
@@ -66,89 +44,91 @@ const statusPageHTML = `<!DOCTYPE html>
             gap: 15px;
         }
         .metric {
-            padding: 12px;
-            border: 1px solid rgba(0,255,65,0.2);
-            background: rgba(0,20,40,0.6);
+            padding: 15px;
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.1);
         }
         .metric-label {
             font-size: 0.85em;
-            color: #00d9ff;
-            margin-bottom: 5px;
+            color: #94a3b8;
+            margin-bottom: 8px;
         }
         .metric-value {
-            font-size: 1.4em;
-            font-weight: bold;
+            font-size: 1.6em;
+            font-weight: 600;
+            color: #f1f5f9;
         }
-        .status-online { color: #00ff41; }
-        .status-offline { color: #ff0055; }
-        .status-waking { color: #ffaa00; }
+        .status-online { color: #22c55e; }
+        .status-offline { color: #ef4444; }
+        .status-waking { color: #f59e0b; }
 
         /* Sessions */
         .session-card {
-            border: 1px solid rgba(0,255,65,0.4);
-            padding: 15px;
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 16px;
             margin-bottom: 12px;
-            background: rgba(0,40,20,0.3);
-            position: relative;
-            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
-        .session-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, transparent, #00ff41, transparent);
-            animation: scan 2s linear infinite;
-        }
-        @keyframes scan {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
+        .session-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
         .session-user {
-            font-size: 1.2em;
-            color: #00ff41;
+            font-size: 1.1em;
+            color: #f1f5f9;
             margin-bottom: 8px;
+            font-weight: 600;
         }
         .session-item {
-            font-size: 1.1em;
-            color: #00d9ff;
+            font-size: 1em;
+            color: #38bdf8;
             margin-bottom: 8px;
         }
         .session-device {
             font-size: 0.9em;
-            color: #888;
-            margin-bottom: 8px;
+            color: #94a3b8;
+            margin-bottom: 10px;
         }
         .progress-bar {
             width: 100%;
-            height: 6px;
-            background: rgba(0,255,65,0.2);
-            border: 1px solid rgba(0,255,65,0.3);
-            position: relative;
-            margin-top: 8px;
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
         }
         .progress-fill {
             height: 100%;
-            background: #00ff41;
+            background: linear-gradient(90deg, #3b82f6, #06b6d4);
             transition: width 1s;
-            box-shadow: 0 0 10px rgba(0,255,65,0.8);
         }
         .playstate {
             display: inline-block;
-            padding: 2px 8px;
-            border: 1px solid;
-            font-size: 0.8em;
-            margin-top: 5px;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            font-weight: 600;
+            margin-top: 8px;
         }
-        .playing { border-color: #00ff41; color: #00ff41; }
-        .paused { border-color: #ffaa00; color: #ffaa00; }
+        .playing {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+            border: 1px solid #22c55e;
+        }
+        .paused {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+            border: 1px solid #f59e0b;
+        }
 
         /* Chart */
         .chart-container {
-            background: rgba(0,20,40,0.6);
-            border: 1px solid rgba(0,255,65,0.2);
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
             padding: 15px;
             margin-top: 15px;
         }
@@ -156,136 +136,120 @@ const statusPageHTML = `<!DOCTYPE html>
 
         /* Logs */
         .logs {
-            background: #000;
-            border: 1px solid rgba(0,255,65,0.3);
-            padding: 12px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 15px;
             height: 300px;
             overflow-y: auto;
-            font-size: 0.9em;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.85em;
         }
         .log-entry {
             padding: 4px 0;
-            border-bottom: 1px solid rgba(0,255,65,0.1);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
         }
-        .log-time { color: #00d9ff; }
-        .log-error { color: #ff0055; }
-        .log-warn { color: #ffaa00; }
-
-        .blink { animation: blink 1s step-start infinite; }
-        @keyframes blink {
-            50% { opacity: 0; }
-        }
+        .log-time { color: #94a3b8; }
+        .log-error { color: #ef4444; }
+        .log-warn { color: #f59e0b; }
+        .log-info { color: #38bdf8; }
     </style>
 </head>
 <body>
-    <div class="terminal">
-        <div class="terminal-header">
-            <span>JELLYWOLPROXY CONTROL PANEL v1.0</span>
-            <span id="clock"></span>
-        </div>
-        <div class="terminal-body">
-            <h1>┌─[ SYSTEM STATUS ]</h1>
+    <div class="container">
+        <h1>📊 JellyWolProxy Dashboard</h1>
 
-            <div class="section">
-                <div class="section-title">▸ ACTIVE STREAMING SESSIONS</div>
-                <div id="sessions">
+        <div class="section">
+            <div class="section-title">🎬 Active Streaming Sessions</div>
+            <div id="sessions">
                     <div style="color: #888; font-style: italic;">No active sessions...</div>
                 </div>
             </div>
 
             <div class="section">
-                <div class="section-title">▸ SERVER METRICS</div>
+                <div class="section-title">📈 Server Metrics</div>
                 <div class="grid">
                     <div class="metric">
-                        <div class="metric-label">JELLYFIN STATUS</div>
-                        <div class="metric-value" id="serverState">CHECKING<span class="blink">_</span></div>
+                        <div class="metric-label">Jellyfin Status</div>
+                        <div class="metric-value" id="serverState">CHECKING...</div>
                     </div>
                     <div class="metric">
-                        <div class="metric-label">UPTIME</div>
+                        <div class="metric-label">Uptime</div>
                         <div class="metric-value" id="uptime">-</div>
                     </div>
                     <div class="metric">
-                        <div class="metric-label">TOTAL REQUESTS</div>
+                        <div class="metric-label">Total Requests</div>
                         <div class="metric-value" id="totalRequests">0</div>
                     </div>
                     <div class="metric">
-                        <div class="metric-label">CACHE HIT RATE</div>
+                        <div class="metric-label">Cache Hit Rate</div>
                         <div class="metric-value" id="cacheHitRate">0%</div>
                     </div>
                     <div class="metric">
-                        <div class="metric-label">WAKE-UP COUNT</div>
+                        <div class="metric-label">Wake-up Count</div>
                         <div class="metric-value" id="wakeUpCount">0</div>
                     </div>
                     <div class="metric">
-                        <div class="metric-label">AVG WAKE TIME</div>
+                        <div class="metric-label">Avg Wake Time</div>
                         <div class="metric-value" id="avgWakeUpTime">-</div>
                     </div>
                 </div>
 
                 <div class="chart-container">
-                    <div style="color: #00d9ff; margin-bottom: 10px;">NETWORK BANDWIDTH (IN/OUT)</div>
+                    <div style="color: #38bdf8; margin-bottom: 10px; font-weight: 600;">Network Bandwidth</div>
                     <canvas id="bandwidthChart"></canvas>
                     <div style="display: flex; justify-content: space-around; margin-top: 10px; font-size: 0.9em;">
-                        <div>↓ <span id="bandwidthIn">0 B/s</span></div>
-                        <div>↑ <span id="bandwidthOut">0 B/s</span></div>
-                        <div>TOTAL IN: <span id="totalBytesIn">0 B</span></div>
-                        <div>TOTAL OUT: <span id="totalBytesOut">0 B</span></div>
+                        <div>↓ <span id="bandwidthIn" style="color: #06b6d4;">0 B/s</span></div>
+                        <div>↑ <span id="bandwidthOut" style="color: #3b82f6;">0 B/s</span></div>
+                        <div>Total In: <span id="totalBytesIn">0 B</span></div>
+                        <div>Total Out: <span id="totalBytesOut">0 B</span></div>
                     </div>
                 </div>
             </div>
 
             <div class="section">
-                <div class="section-title">▸ SYSTEM INFORMATION</div>
+                <div class="section-title">💻 System Information</div>
                 <div class="grid">
                     <div class="metric">
-                        <div class="metric-label">HOSTNAME</div>
+                        <div class="metric-label">Hostname</div>
                         <div class="metric-value" style="font-size: 1.1em;" id="hostname">-</div>
                     </div>
                     <div class="metric">
-                        <div class="metric-label">OS / ARCH</div>
+                        <div class="metric-label">OS / Arch</div>
                         <div class="metric-value" style="font-size: 1.1em;" id="osArch">-</div>
                     </div>
                     <div class="metric">
-                        <div class="metric-label">CPU CORES</div>
+                        <div class="metric-label">CPU Cores</div>
                         <div class="metric-value" id="numCPU">-</div>
                     </div>
                     <div class="metric">
-                        <div class="metric-label">MEMORY (ALLOC/SYS)</div>
+                        <div class="metric-label">Memory (Alloc/Sys)</div>
                         <div class="metric-value" style="font-size: 1em;" id="memory">-</div>
                     </div>
                     <div class="metric">
-                        <div class="metric-label">GOROUTINES</div>
+                        <div class="metric-label">Goroutines</div>
                         <div class="metric-value" id="goroutines">-</div>
                     </div>
                     <div class="metric">
-                        <div class="metric-label">GC RUNS</div>
+                        <div class="metric-label">GC Runs</div>
                         <div class="metric-value" id="gcCount">-</div>
                     </div>
                 </div>
             </div>
 
             <div class="section">
-                <div class="section-title">▸ LIVE SYSTEM LOGS</div>
+                <div class="section-title">📝 Live System Logs</div>
                 <div class="logs" id="logs">
                     <div class="log-entry"><span class="log-time">[INIT]</span> Connecting to log stream...</div>
                 </div>
             </div>
 
-            <div style="text-align: center; margin-top: 20px; color: #00d9ff; font-size: 0.85em;">
-                <span class="blink">█</span> AUTO-REFRESH: 2s | REAL-TIME MONITORING ACTIVE
+            <div style="text-align: center; margin-top: 20px; color: #94a3b8; font-size: 0.85em;">
+                Auto-refresh every 2 seconds • Real-time monitoring
             </div>
         </div>
-    </div>
 
     <script>
-        // Clock
-        function updateClock() {
-            const now = new Date();
-            document.getElementById('clock').textContent = now.toLocaleTimeString('en-US', { hour12: false });
-        }
-        setInterval(updateClock, 1000);
-        updateClock();
-
         // Bandwidth chart
         const maxDataPoints = 60;
         const bandwidthInData = new Array(maxDataPoints).fill(0);
@@ -323,7 +287,7 @@ const statusPageHTML = `<!DOCTYPE html>
             maxBandwidth = Math.max(maxBandwidth * 0.95, currentMax * 1.2);
 
             // Grid
-            ctx.strokeStyle = 'rgba(0,255,65,0.1)';
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
             ctx.lineWidth = 1;
             for (let i = 0; i < 4; i++) {
                 const y = padding + (height - padding * 2) * i / 3;
@@ -333,9 +297,9 @@ const statusPageHTML = `<!DOCTYPE html>
                 ctx.stroke();
             }
 
-            // IN (green)
-            ctx.fillStyle = 'rgba(0,255,65,0.2)';
-            ctx.strokeStyle = '#00ff41';
+            // IN (cyan/blue gradient)
+            ctx.fillStyle = 'rgba(6,182,212,0.2)';
+            ctx.strokeStyle = '#06b6d4';
             ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.moveTo(0, height - padding);
@@ -350,9 +314,9 @@ const statusPageHTML = `<!DOCTYPE html>
             ctx.lineTo(0, height - padding);
             ctx.fill();
 
-            // OUT (cyan)
-            ctx.fillStyle = 'rgba(0,217,255,0.2)';
-            ctx.strokeStyle = '#00d9ff';
+            // OUT (blue)
+            ctx.fillStyle = 'rgba(59,130,246,0.2)';
+            ctx.strokeStyle = '#3b82f6';
             ctx.lineWidth = 2;
             ctx.beginPath();
             for (let i = 0; i < bandwidthOutData.length; i++) {
