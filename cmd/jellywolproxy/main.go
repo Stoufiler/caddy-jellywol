@@ -15,6 +15,7 @@ import (
 	"github.com/Stoufiler/JellyWolProxy/internal/dashboard"
 	"github.com/Stoufiler/JellyWolProxy/internal/handlers"
 	"github.com/Stoufiler/JellyWolProxy/internal/health"
+	"github.com/Stoufiler/JellyWolProxy/internal/jellyfin"
 	"github.com/Stoufiler/JellyWolProxy/internal/logger"
 	"github.com/Stoufiler/JellyWolProxy/internal/middlewares"
 	"github.com/Stoufiler/JellyWolProxy/internal/server_state"
@@ -165,6 +166,11 @@ func main() {
 
 	log.Info("Configuration successfully loaded")
 	log.Infof("Log level set to %s", log.GetLevel().String())
+
+	// Initialize Jellyfin client
+	jellyfinClient := jellyfin.NewClient(cfg, log)
+	dashboard.SetJellyfinClient(jellyfinClient)
+	log.Info("Jellyfin client initialized for session monitoring")
 
 	serverState := &server_state.ServerState{}
 	checker := &services.ConcreteServerStateChecker{}
