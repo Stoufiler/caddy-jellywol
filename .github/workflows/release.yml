@@ -86,7 +86,7 @@ jobs:
 
       - name: Generate SBOM
         run: |
-          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+          go install github.com/anchore/syft/cmd/syft@latest
           syft packages . -o spdx-json=dist/sbom.spdx.json
 
       - name: Create Release

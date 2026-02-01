@@ -54,7 +54,7 @@ services:
 
 ### Build from Source
 
-1. Ensure you have Go 1.23.5 or later installed.
+1. Ensure you have Go 1.25 or later installed.
 2. Clone the repository:
    ```bash
    git clone https://github.com/Stoufiler/JellyWolProxy.git
