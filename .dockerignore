@@ -1,0 +1,42 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# CI/CD
+.github
+.pre-commit-config.yaml
+
+# Build artifacts
+build/
+dist/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test files
+*.test
+*.out
+coverage.out
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Docs
+README.md
+LICENSE
+*.md
+docs/
+
+# Config examples
+config.json.example
+config.json
+
+# Misc
+.DS_Store
+Thumbs.db

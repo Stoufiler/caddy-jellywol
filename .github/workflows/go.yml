@@ -20,9 +20,44 @@ jobs:
       uses: actions/setup-go@v6
       with:
         go-version: '1.25.4'
+        cache: true
 
-    - name: Test
-      run: go test -v ./...
+    - name: Go Format Check
+      run: |
+        if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
+          echo "Code is not formatted. Run 'gofmt -s -w .'"
+          gofmt -s -l .
+          exit 1
+        fi
+
+    - name: Go Vet
+      run: go vet ./...
+
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v8
+      with:
+        version: latest
+        args: --timeout=5m
+
+    - name: Test with Coverage
+      run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+
+    - name: Generate Coverage Report
+      run: go tool cover -html=coverage.out -o coverage.html
+
+    - name: Upload Coverage Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: |
+          coverage.out
+          coverage.html
+        retention-days: 30
+
+    - name: Security Scan with govulncheck
+      run: |
+        go install golang.org/x/vuln/cmd/govulncheck@latest
+        govulncheck ./...
 
     - name: Build
       run: go build -v ./...

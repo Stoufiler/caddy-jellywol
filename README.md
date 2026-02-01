@@ -1,5 +1,12 @@
 # JellyWolProxy
 
+[![Go](https://github.com/Stoufiler/JellyWolProxy/actions/workflows/go.yml/badge.svg)](https://github.com/Stoufiler/JellyWolProxy/actions/workflows/go.yml)
+[![Release](https://github.com/Stoufiler/JellyWolProxy/actions/workflows/release.yml/badge.svg)](https://github.com/Stoufiler/JellyWolProxy/actions/workflows/release.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/Stoufiler/JellyWolProxy)](https://goreportcard.com/report/github.com/Stoufiler/JellyWolProxy)
+[![License](https://img.shields.io/github/license/Stoufiler/JellyWolProxy)](LICENSE)
+[![GitHub release](https://img.shields.io/github/v/release/Stoufiler/JellyWolProxy)](https://github.com/Stoufiler/JellyWolProxy/releases/latest)
+[![Docker Pulls](https://img.shields.io/docker/pulls/stoufiler/jellywolproxy)](https://github.com/Stoufiler/JellyWolProxy/pkgs/container/jellywolproxy)
+
 JellyWolProxy is a smart proxy server that seamlessly integrates Jellyfin media server with Wake-on-LAN capabilities. It automatically manages your Jellyfin server's power state by waking it up on-demand when media content is requested and forwarding traffic efficiently.
 
 ## Key Features
@@ -13,6 +20,40 @@ JellyWolProxy is a smart proxy server that seamlessly integrates Jellyfin media 
 
 ## Installation
 
+### Binary Release
+
+Download the latest release for your platform from the [releases page](https://github.com/Stoufiler/JellyWolProxy/releases).
+
+### Docker
+
+```bash
+docker pull ghcr.io/stoufiler/jellywolproxy:latest
+
+docker run -d \
+  --name jellywolproxy \
+  --network host \
+  -v ./config.json:/config/config.json:ro \
+  ghcr.io/stoufiler/jellywolproxy:latest
+```
+
+**Docker Compose:**
+
+```yaml
+version: '3.8'
+services:
+  jellywolproxy:
+    image: ghcr.io/stoufiler/jellywolproxy:latest
+    container_name: jellywolproxy
+    network_mode: host
+    volumes:
+      - ./config.json:/config/config.json:ro
+    restart: unless-stopped
+```
+
+> **Note:** `network_mode: host` is required for Wake-on-LAN to work properly.
+
+### Build from Source
+
 1. Ensure you have Go 1.23.5 or later installed.
 2. Clone the repository:
    ```bash
@@ -21,6 +62,8 @@ JellyWolProxy is a smart proxy server that seamlessly integrates Jellyfin media 
    ```
 3. Build the project:
    ```bash
+   make build
+   # or
    go build -o jellywolproxy ./cmd/jellywolproxy
    ```
 
