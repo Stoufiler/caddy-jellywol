@@ -85,6 +85,11 @@ func doUpgrade(latestVersion string) error {
 		}
 	}()
 
+	// If 404, try legacy format (for older releases)
+	if resp.StatusCode == http.StatusNotFound {
+		return tryLegacyUpgrade(latestVersion)
+	}
+
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
@@ -95,24 +100,60 @@ func doUpgrade(latestVersion string) error {
 		return err
 	}
 
-	// Extract binary from archive
+	// Extract and apply binary
+	if err := extractAndApplyBinary(archiveBytes); err != nil {
+		return err
+	}
+
+	// Try to download and compare config.json.example (optional)
+	return tryConfigUpdate(latestVersion)
+}
+
+func tryLegacyUpgrade(version string) error {
+	fmt.Println("Trying legacy release format...")
+	legacyURL := getLegacyDownloadURL(version)
+	fmt.Printf("Downloading from %s...\n", legacyURL)
+
+	resp, err := http.Get(legacyURL)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Error closing response body: %v\n", err)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	// Legacy format is raw binary, apply directly
+	if err := applyUpdate(resp.Body, update.Options{}); err != nil {
+		return err
+	}
+
+	fmt.Println("Upgraded using legacy format.")
+	return nil
+}
+
+func extractAndApplyBinary(archiveBytes []byte) error {
 	var binaryReader io.Reader
+	var err error
+
 	if runtime.GOOS == "windows" {
-		// Extract from .zip
 		binaryReader, err = extractFromZip(archiveBytes)
 	} else {
-		// Extract from .tar.gz
 		binaryReader, err = extractFromTarGz(archiveBytes)
 	}
 	if err != nil {
 		return fmt.Errorf("failed to extract binary: %v", err)
 	}
 
-	if err := applyUpdate(binaryReader, update.Options{}); err != nil {
-		return err
-	}
+	return applyUpdate(binaryReader, update.Options{})
+}
 
-	// Try to download and compare config.json.example (optional)
+func tryConfigUpdate(latestVersion string) error {
 	configDownloadURL, err := getconfigDownloadURL(latestVersion)
 	if err != nil {
 		fmt.Printf("Warning: could not get config download URL: %v\n", err)
@@ -217,6 +258,9 @@ var (
 			archiveExt = ".zip"
 		}
 		return fmt.Sprintf("https://github.com/Stoufiler/JellyWolProxy/releases/download/%s/jellywolproxy-%s-%s%s", version, runtime.GOOS, runtime.GOARCH, archiveExt), nil
+	}
+	getLegacyDownloadURL = func(version string) string {
+		return fmt.Sprintf("https://github.com/Stoufiler/JellyWolProxy/releases/download/%s/jelly-wol-proxy-%s-%s", version, runtime.GOOS, runtime.GOARCH)
 	}
 	getconfigDownloadURL = func(version string) (string, error) {
 		return fmt.Sprintf("https://github.com/Stoufiler/JellyWolProxy/releases/download/%s/config.json.example", version), nil
