@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"io"
 	"net/http"
 	"os"
 	"runtime"
@@ -38,7 +39,7 @@ func SetLogFile(logger *logrus.Logger, logFile string) {
 	if err != nil {
 		logger.Warnf("Failed to open log file: %v", err)
 	} else {
-		logger.SetOutput(file)
+		logger.SetOutput(io.MultiWriter(os.Stdout, file))
 	}
 }
 
