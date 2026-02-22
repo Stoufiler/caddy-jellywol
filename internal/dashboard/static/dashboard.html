@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JellyWolProxy</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg:        #0f172a;
+            --bg-panel:  #1e293b;
+            --bg-card:   #162032;
+            --border:    rgba(255,255,255,0.08);
+            --accent:    #38bdf8;
+            --accent2:   #818cf8;
+            --text:      #e2e8f0;
+            --text-muted:#94a3b8;
+            --online:    #22c55e;
+            --offline:   #ef4444;
+            --waking:    #f59e0b;
+            --sidebar-w: 220px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* ── Sidebar ─────────────────────────────────── */
+        .sidebar {
+            width: var(--sidebar-w);
+            background: var(--bg-panel);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 0; left: 0; bottom: 0;
+            z-index: 100;
+            transition: transform 0.3s;
+        }
+
+        .sidebar-brand {
+            padding: 22px 20px 18px;
+            border-bottom: 1px solid var(--border);
+        }
+        .sidebar-brand .logo {
+            font-size: 1.05em;
+            font-weight: 700;
+            color: var(--accent);
+            letter-spacing: -0.01em;
+        }
+        .sidebar-brand .sub {
+            font-size: 0.72em;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .sidebar-status {
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        .status-label {
+            font-size: 0.7em;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            transition: background 0.3s, color 0.3s;
+        }
+        .status-pill.online  { background: rgba(34,197,94,0.15);  color: var(--online);  border: 1px solid rgba(34,197,94,0.3); }
+        .status-pill.offline { background: rgba(239,68,68,0.15);  color: var(--offline); border: 1px solid rgba(239,68,68,0.3); }
+        .status-pill.waking  { background: rgba(245,158,11,0.15); color: var(--waking);  border: 1px solid rgba(245,158,11,0.3); }
+
+        .dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: currentColor;
+            flex-shrink: 0;
+        }
+        .online .dot  { animation: pulse-green 2s infinite; }
+        .waking .dot  { animation: pulse-amber 1s infinite; }
+
+        @keyframes pulse-green {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0.4; }
+        }
+        @keyframes pulse-amber {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0.3; }
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 12px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 12px;
+            border-radius: 7px;
+            color: var(--text-muted);
+            font-size: 0.88em;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.15s, color 0.15s;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+        }
+        .nav-item:hover, .nav-item.active {
+            background: rgba(56,189,248,0.1);
+            color: var(--accent);
+        }
+        .nav-item .icon { font-size: 1em; width: 18px; text-align: center; }
+
+        .sidebar-footer {
+            padding: 14px 20px;
+            border-top: 1px solid var(--border);
+            font-size: 0.72em;
+            color: var(--text-muted);
+        }
+
+        /* ── Main ────────────────────────────────────── */
+        .main {
+            margin-left: var(--sidebar-w);
+            flex: 1;
+            padding: 28px 32px;
+            overflow-y: auto;
+        }
+
+        .page { display: none; }
+        .page.active { display: block; }
+
+        .page-title {
+            font-size: 1.35em;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 22px;
+        }
+
+        /* ── Cards grid ──────────────────────────────── */
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 14px;
+            margin-bottom: 22px;
+        }
+        .card {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px 18px;
+        }
+        .card-label {
+            font-size: 0.75em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 8px;
+        }
+        .card-value {
+            font-size: 1.55em;
+            font-weight: 700;
+            color: var(--text);
+            line-height: 1;
+        }
+        .card-value.online  { color: var(--online); }
+        .card-value.offline { color: var(--offline); }
+        .card-value.waking  { color: var(--waking); }
+
+        /* ── Section panel ───────────────────────────── */
+        .panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 22px;
+        }
+        .panel-title {
+            font-size: 0.85em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            color: var(--accent);
+            margin-bottom: 16px;
+        }
+
+        /* ── Sessions ────────────────────────────────── */
+        .session-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px 16px;
+            margin-bottom: 10px;
+        }
+        .session-card:last-child { margin-bottom: 0; }
+        .session-user { font-weight: 600; margin-bottom: 4px; }
+        .session-item { color: var(--accent); font-size: 0.92em; margin-bottom: 3px; }
+        .session-device { color: var(--text-muted); font-size: 0.82em; margin-bottom: 8px; }
+        .playstate-badge {
+            display: inline-block;
+            padding: 2px 9px;
+            border-radius: 4px;
+            font-size: 0.72em;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+        }
+        .badge-playing { background: rgba(34,197,94,0.15);  color: var(--online);  border: 1px solid rgba(34,197,94,0.3); }
+        .badge-paused  { background: rgba(245,158,11,0.15); color: var(--waking);  border: 1px solid rgba(245,158,11,0.3); }
+        .progress-bar {
+            width: 100%; height: 5px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 3px; overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            transition: width 1s;
+        }
+        .progress-pct { font-size: 0.78em; color: var(--text-muted); margin-top: 4px; }
+        .empty-state { color: var(--text-muted); font-style: italic; font-size: 0.9em; }
+
+        /* ── Chart ───────────────────────────────────── */
+        .chart-wrap { position: relative; }
+        canvas { width: 100% !important; height: 140px !important; display: block; }
+        .chart-legend {
+            display: flex;
+            gap: 20px;
+            margin-top: 12px;
+            font-size: 0.82em;
+            flex-wrap: wrap;
+        }
+        .chart-legend span { color: var(--text-muted); }
+        .chart-legend b { color: var(--text); }
+
+        /* ── Logs ────────────────────────────────────── */
+        .logs-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .logs-toolbar .spacer { flex: 1; }
+        .btn-sm {
+            padding: 4px 12px;
+            border-radius: 5px;
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            color: var(--text-muted);
+            font-size: 0.78em;
+            cursor: pointer;
+            transition: color 0.15s, border-color 0.15s;
+        }
+        .btn-sm:hover { color: var(--text); border-color: var(--accent); }
+        .btn-sm.active { color: var(--accent); border-color: var(--accent); }
+
+        .logs {
+            background: #0a1120;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 14px;
+            height: 420px;
+            overflow-y: auto;
+            font-family: 'SF Mono', 'Monaco', 'Menlo', 'Consolas', monospace;
+            font-size: 0.82em;
+            line-height: 1.55;
+        }
+        .log-entry {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            padding: 2px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+        .log-time { color: #475569; white-space: nowrap; flex-shrink: 0; }
+        .log-badge {
+            display: inline-block;
+            width: 44px;
+            text-align: center;
+            padding: 0 4px;
+            border-radius: 3px;
+            font-size: 0.75em;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            flex-shrink: 0;
+        }
+        .badge-error   { background: rgba(239,68,68,0.2);   color: #f87171; }
+        .badge-warning { background: rgba(245,158,11,0.2);  color: #fbbf24; }
+        .badge-info    { background: rgba(56,189,248,0.15); color: #38bdf8; }
+        .badge-debug   { background: rgba(148,163,184,0.12); color: #64748b; }
+        .badge-trace   { background: rgba(148,163,184,0.08); color: #475569; }
+
+        .log-msg { color: var(--text); word-break: break-word; }
+        .log-msg.msg-error   { color: #fca5a5; }
+        .log-msg.msg-warning { color: #fde68a; }
+        .log-msg.msg-debug   { color: #64748b; }
+        .log-msg.msg-trace   { color: #475569; }
+
+        /* ── System grid ─────────────────────────────── */
+        .sys-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 12px;
+        }
+        .sys-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 14px;
+        }
+        .sys-label { font-size: 0.73em; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; }
+        .sys-value { font-size: 1em; font-weight: 600; color: var(--text); word-break: break-all; }
+
+        /* ── Hamburger (mobile) ──────────────────────── */
+        .hamburger {
+            display: none;
+            position: fixed;
+            top: 14px; left: 14px;
+            z-index: 200;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            padding: 8px 10px;
+            cursor: pointer;
+            font-size: 1.1em;
+            color: var(--text);
+        }
+        @media (max-width: 768px) {
+            .hamburger { display: block; }
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .main { margin-left: 0; padding: 20px 16px; padding-top: 56px; }
+        }
+    </style>
+</head>
+<body>
+
+<button class="hamburger" onclick="toggleSidebar()">☰</button>
+
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+        <div class="logo">🐋 JellyWolProxy</div>
+        <div class="sub">Smart Wake-on-LAN Proxy</div>
+    </div>
+
+    <div class="sidebar-status">
+        <div class="status-label">Jellyfin Status</div>
+        <div class="status-pill offline" id="statusPill">
+            <span class="dot"></span>
+            <span id="statusText">CHECKING…</span>
+        </div>
+    </div>
+
+    <nav class="sidebar-nav">
+        <button class="nav-item active" onclick="showPage('overview', this)">
+            <span class="icon">📊</span> Overview
+        </button>
+        <button class="nav-item" onclick="showPage('sessions', this)">
+            <span class="icon">🎬</span> Sessions
+        </button>
+        <button class="nav-item" onclick="showPage('logs', this)">
+            <span class="icon">📝</span> Live Logs
+        </button>
+        <button class="nav-item" onclick="showPage('system', this)">
+            <span class="icon">💻</span> System
+        </button>
+    </nav>
+
+    <div class="sidebar-footer">
+        Auto-refresh every 2s
+    </div>
+</aside>
+
+<main class="main">
+
+    <!-- ── Overview ───────────────────────────────── -->
+    <div class="page active" id="page-overview">
+        <div class="page-title">Overview</div>
+
+        <div class="cards">
+            <div class="card">
+                <div class="card-label">Jellyfin</div>
+                <div class="card-value offline" id="serverState">CHECKING…</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Uptime</div>
+                <div class="card-value" id="uptime">—</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Total Requests</div>
+                <div class="card-value" id="totalRequests">0</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Cache Hit Rate</div>
+                <div class="card-value" id="cacheHitRate">0%</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Wake-up Count</div>
+                <div class="card-value" id="wakeUpCount">0</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Avg Wake Time</div>
+                <div class="card-value" id="avgWakeUpTime">—</div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">Network Bandwidth</div>
+            <div class="chart-wrap">
+                <canvas id="bandwidthChart"></canvas>
+            </div>
+            <div class="chart-legend">
+                <div>↓ In: <b id="bandwidthIn">0 B/s</b></div>
+                <div>↑ Out: <b id="bandwidthOut">0 B/s</b></div>
+                <div><span>Total In:</span> <b id="totalBytesIn">0 B</b></div>
+                <div><span>Total Out:</span> <b id="totalBytesOut">0 B</b></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Sessions ────────────────────────────────── -->
+    <div class="page" id="page-sessions">
+        <div class="page-title">Active Sessions</div>
+        <div id="sessionsList">
+            <div class="empty-state">No active sessions…</div>
+        </div>
+    </div>
+
+    <!-- ── Live Logs ───────────────────────────────── -->
+    <div class="page" id="page-logs">
+        <div class="page-title">Live Logs</div>
+        <div class="logs-toolbar">
+            <span style="font-size:0.82em; color:var(--text-muted);" id="logCount">0 entries</span>
+            <div class="spacer"></div>
+            <button class="btn-sm active" id="autoScrollBtn" onclick="toggleAutoScroll()">Auto-scroll</button>
+            <button class="btn-sm" onclick="clearLogs()">Clear</button>
+        </div>
+        <div class="logs" id="logs">
+            <div class="log-entry">
+                <span class="log-time">—</span>
+                <span class="log-badge badge-info">INFO</span>
+                <span class="log-msg">Connecting to log stream…</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── System ──────────────────────────────────── -->
+    <div class="page" id="page-system">
+        <div class="page-title">System Information</div>
+        <div class="sys-grid">
+            <div class="sys-card"><div class="sys-label">Hostname</div><div class="sys-value" id="hostname">—</div></div>
+            <div class="sys-card"><div class="sys-label">OS / Arch</div><div class="sys-value" id="osArch">—</div></div>
+            <div class="sys-card"><div class="sys-label">CPU Cores</div><div class="sys-value" id="numCPU">—</div></div>
+            <div class="sys-card"><div class="sys-label">Memory</div><div class="sys-value" id="memory">—</div></div>
+            <div class="sys-card"><div class="sys-label">Goroutines</div><div class="sys-value" id="goroutines">—</div></div>
+            <div class="sys-card"><div class="sys-label">GC Runs</div><div class="sys-value" id="gcCount">—</div></div>
+        </div>
+    </div>
+
+</main>
+
+<script>
+    // ── Navigation ──────────────────────────────────────
+    function showPage(name, btn) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('page-' + name).classList.add('active');
+        btn.classList.add('active');
+        if (name === 'overview') drawChart();
+    }
+
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('open');
+    }
+
+    // ── Formatting ──────────────────────────────────────
+    function formatBytes(b) {
+        if (b === 0) return '0 B';
+        const k = 1024, sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(b) / Math.log(k));
+        return (b / Math.pow(k, i)).toFixed(1) + ' ' + sizes[i];
+    }
+    const formatBw = b => formatBytes(b) + '/s';
+
+    // ── Bandwidth chart ─────────────────────────────────
+    const MAX_PTS = 60;
+    const bwIn  = new Array(MAX_PTS).fill(0);
+    const bwOut = new Array(MAX_PTS).fill(0);
+    let maxBw = 1024;
+
+    function drawChart() {
+        const canvas = document.getElementById('bandwidthChart');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width  = canvas.offsetWidth  * dpr;
+        canvas.height = 140 * dpr;
+        ctx.scale(dpr, dpr);
+
+        const W = canvas.offsetWidth, H = 140, P = 5;
+
+        ctx.clearRect(0, 0, W, H);
+
+        const peak = Math.max(...bwIn, ...bwOut, 1024);
+        maxBw = Math.max(maxBw * 0.95, peak * 1.2);
+
+        // Grid lines
+        ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 4; i++) {
+            const y = P + (H - P * 2) * i / 3;
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+        }
+
+        function drawSeries(data, stroke, fill) {
+            ctx.strokeStyle = stroke;
+            ctx.fillStyle   = fill;
+            ctx.lineWidth   = 1.8;
+            ctx.beginPath();
+            data.forEach((v, i) => {
+                const x = (i / (data.length - 1)) * W;
+                const y = H - P - (v / maxBw) * (H - P * 2);
+                i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+            ctx.lineTo(W, H - P); ctx.lineTo(0, H - P);
+            ctx.fill();
+        }
+
+        drawSeries(bwIn,  '#06b6d4', 'rgba(6,182,212,0.15)');
+        drawSeries(bwOut, '#818cf8', 'rgba(129,140,248,0.15)');
+    }
+
+    // ── Sessions ────────────────────────────────────────
+    function renderSessions(sessions) {
+        const el = document.getElementById('sessionsList');
+        if (!sessions || sessions.length === 0) {
+            el.innerHTML = '<div class="empty-state">No active sessions…</div>';
+            return;
+        }
+        const active = sessions.filter(s => s.NowPlayingItem);
+        if (active.length === 0) {
+            el.innerHTML = '<div class="empty-state">No active playback sessions…</div>';
+            return;
+        }
+        el.innerHTML = active.map(s => {
+            const item = s.NowPlayingItem;
+            const title = item.Type === 'Episode' && item.SeriesName
+                ? item.SeriesName + ' · S' + String(item.ParentIndexNumber || 0).padStart(2,'0')
+                  + 'E' + String(item.IndexNumber || 0).padStart(2,'0') + ' — ' + item.Name
+                : item.Name;
+            const pct = item.RunTimeTicks > 0
+                ? (s.PlayState.PositionTicks / item.RunTimeTicks * 100).toFixed(1) : 0;
+            const paused = s.PlayState.IsPaused;
+            return `<div class="session-card">
+                <div class="session-user">👤 ${s.UserName}</div>
+                <div class="session-item">📺 ${title}</div>
+                <div class="session-device">💻 ${s.DeviceName} (${s.Client})</div>
+                <span class="playstate-badge ${paused ? 'badge-paused' : 'badge-playing'}">${paused ? 'PAUSED' : 'PLAYING'}</span>
+                <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+                <div class="progress-pct">${pct}% complete</div>
+            </div>`;
+        }).join('');
+    }
+
+    // ── Polling ─────────────────────────────────────────
+    function updateStatus() {
+        fetch('/status/api')
+            .then(r => r.json())
+            .then(d => {
+                // Sidebar pill
+                const pill = document.getElementById('statusPill');
+                pill.className = 'status-pill ' + d.serverState;
+                document.getElementById('statusText').textContent = d.serverState.toUpperCase();
+
+                // Cards
+                const sv = document.getElementById('serverState');
+                sv.textContent = d.serverState.toUpperCase();
+                sv.className = 'card-value ' + d.serverState;
+
+                document.getElementById('uptime').textContent = d.uptime;
+                document.getElementById('totalRequests').textContent = d.totalRequests.toLocaleString();
+                document.getElementById('cacheHitRate').textContent = d.cacheHitRate.toFixed(1) + '%';
+                document.getElementById('wakeUpCount').textContent = d.wakeUpCount;
+                document.getElementById('avgWakeUpTime').textContent =
+                    d.avgWakeUpTimeSeconds > 0 ? d.avgWakeUpTimeSeconds.toFixed(1) + 's' : '—';
+
+                // Bandwidth
+                document.getElementById('bandwidthIn').textContent  = formatBw(d.bandwidthIn);
+                document.getElementById('bandwidthOut').textContent = formatBw(d.bandwidthOut);
+                document.getElementById('totalBytesIn').textContent  = formatBytes(d.bytesIn);
+                document.getElementById('totalBytesOut').textContent = formatBytes(d.bytesOut);
+                bwIn.shift();  bwIn.push(d.bandwidthIn);
+                bwOut.shift(); bwOut.push(d.bandwidthOut);
+                drawChart();
+
+                // System
+                document.getElementById('hostname').textContent = d.system.hostname;
+                document.getElementById('osArch').textContent  = d.system.os + ' / ' + d.system.arch;
+                document.getElementById('numCPU').textContent  = d.system.numCpu;
+                document.getElementById('memory').textContent  =
+                    d.system.memAllocMB.toFixed(1) + ' / ' + d.system.memSysMB.toFixed(1) + ' MB';
+                document.getElementById('goroutines').textContent = d.system.numGoroutines.toLocaleString();
+                document.getElementById('gcCount').textContent     = d.system.gcCount.toLocaleString();
+
+                renderSessions(d.sessions);
+            })
+            .catch(err => console.error('Status fetch error:', err));
+    }
+
+    updateStatus();
+    setInterval(updateStatus, 2000);
+    window.addEventListener('resize', drawChart);
+
+    // ── Live Logs ───────────────────────────────────────
+    const logsEl    = document.getElementById('logs');
+    let autoScroll  = true;
+    let logCount    = 0;
+
+    function toggleAutoScroll() {
+        autoScroll = !autoScroll;
+        document.getElementById('autoScrollBtn').classList.toggle('active', autoScroll);
+    }
+
+    function clearLogs() {
+        logsEl.innerHTML = '';
+        logCount = 0;
+        document.getElementById('logCount').textContent = '0 entries';
+    }
+
+    function levelInfo(level) {
+        switch (level) {
+            case 'error':   return { badge: 'ERROR',   badgeCls: 'badge-error',   msgCls: 'msg-error' };
+            case 'warning': return { badge: 'WARN',    badgeCls: 'badge-warning', msgCls: 'msg-warning' };
+            case 'info':    return { badge: 'INFO',    badgeCls: 'badge-info',    msgCls: '' };
+            case 'debug':   return { badge: 'DEBUG',   badgeCls: 'badge-debug',   msgCls: 'msg-debug' };
+            default:        return { badge: level.toUpperCase().slice(0,5), badgeCls: 'badge-trace', msgCls: 'msg-trace' };
+        }
+    }
+
+    const evtSource = new EventSource('/status/logs');
+    evtSource.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        const { badge, badgeCls, msgCls } = levelInfo(data.level);
+
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        entry.innerHTML =
+            `<span class="log-time">${data.time}</span>` +
+            `<span class="log-badge ${badgeCls}">${badge}</span>` +
+            `<span class="log-msg ${msgCls}">${escapeHtml(data.message)}</span>`;
+
+        logsEl.appendChild(entry);
+
+        // Keep at most 200 entries
+        while (logsEl.children.length > 200) logsEl.removeChild(logsEl.firstChild);
+
+        logCount++;
+        document.getElementById('logCount').textContent = logCount + (logCount === 1 ? ' entry' : ' entries');
+
+        if (autoScroll) logsEl.scrollTop = logsEl.scrollHeight;
+    };
+
+    function escapeHtml(s) {
+        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+</script>
+</body>
+</html>

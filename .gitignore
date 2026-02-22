@@ -12,8 +12,9 @@
 
 # Output of the go coverage tool
 *.out
-*.html
 coverage.*
+coverage.html
+!internal/dashboard/static/*.html
 
 # IDE specific files
 .idea/
