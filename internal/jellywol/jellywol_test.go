@@ -1,4 +1,4 @@
-package caddy_jellywol
+package jellywol
 
 import (
 	"testing"

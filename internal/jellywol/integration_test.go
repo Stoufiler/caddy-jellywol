@@ -1,4 +1,4 @@
-package caddy_jellywol_test
+package jellywol_test
 
 import (
 	"net"
@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	caddy_jellywol "github.com/Stoufiler/caddy-jellywol"
+	jellywol "github.com/Stoufiler/caddy-jellywol/internal/jellywol"
 	"go.uber.org/zap"
 )
 
@@ -62,7 +62,7 @@ func TestIntegration_ServerIsUp(t *testing.T) {
 	defer cleanup()
 
 	// 1. Setup our Plugin
-	plugin := &caddy_jellywol.JellyWol{
+	plugin := &jellywol.JellyWol{
 		Mac:        "00:11:22:33:44:55",
 		PingIP:     ip,
 		PingPort:   port,
@@ -99,7 +99,7 @@ func TestIntegration_ServerIsDown_BlockPath(t *testing.T) {
 	ip := "127.0.0.1"
 	port := 45678
 
-	plugin := &caddy_jellywol.JellyWol{
+	plugin := &jellywol.JellyWol{
 		Mac:        "00:11:22:33:44:55",
 		PingIP:     ip,
 		PingPort:   port,
@@ -135,7 +135,7 @@ func TestIntegration_ServerIsDown_TriggerPath(t *testing.T) {
 	ip := "127.0.0.1"
 	port := 45678
 
-	plugin := &caddy_jellywol.JellyWol{
+	plugin := &jellywol.JellyWol{
 		Mac:          "00:11:22:33:44:55",
 		PingIP:       ip,
 		PingPort:     port,
@@ -163,7 +163,7 @@ func TestIntegration_UnmatchedPath(t *testing.T) {
 	ip := "127.0.0.1"
 	port := 45678
 
-	plugin := &caddy_jellywol.JellyWol{
+	plugin := &jellywol.JellyWol{
 		Mac:          "00:11:22:33:44:55",
 		PingIP:       ip,
 		PingPort:     port,

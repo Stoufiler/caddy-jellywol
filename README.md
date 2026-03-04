@@ -28,12 +28,12 @@ We provide a pre-built Docker image based on Caddy with the `jellywol` plugin in
 ```yaml
 version: '3.8'
 services:
-  caddy-jellywol:
-    image: ghcr.io/stoufiler/caddy-jellywol:latest
-    container_name: caddy-jellywol
+  jellywolproxy:
+    image: ghcr.io/stoufiler/jellywolproxy:latest
+    container_name: jellywolproxy
     network_mode: host # Required for Wake-on-LAN to broadcast properly
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./deployments/docker/Caddyfile.example:/etc/caddy/Caddyfile:ro
       - ./caddy_data:/data
       - ./caddy_config:/config
     restart: unless-stopped
