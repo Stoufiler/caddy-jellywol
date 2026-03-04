@@ -227,63 +227,60 @@ func (j *JellyWol) sendWOL() {
 func (j *JellyWol) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 	for d.Next() {
 		for nesting := d.Nesting(); d.NextBlock(nesting); {
-			switch d.Val() {
-			case "mac":
-				if !d.NextArg() {
-					return d.ArgErr()
-				}
-				j.Mac = d.Val()
-			case "broadcast":
-				if !d.NextArg() {
-					return d.ArgErr()
-				}
-				j.Broadcast = d.Val()
-			case "ping_ip":
-				if !d.NextArg() {
-					return d.ArgErr()
-				}
-				j.PingIP = d.Val()
-			case "ping_port":
-				if !d.NextArg() {
-					return d.ArgErr()
-				}
-				port, err := strconv.Atoi(d.Val())
-				if err != nil {
-					return d.Errf("invalid ping_port: %v", err)
-				}
-				j.PingPort = port
-			case "timeout":
-				if !d.NextArg() {
-					return d.ArgErr()
-				}
-				j.Timeout = d.Val()
-			case "block_paths":
-				j.BlockPaths = d.RemainingArgs()
-			case "trigger_paths":
-				j.TriggerPaths = d.RemainingArgs()
-			case "wol_count":
-				if !d.NextArg() {
-					return d.ArgErr()
-				}
-				count, err := strconv.Atoi(d.Val())
-				if err != nil {
-					return d.Errf("invalid wol_count: %v", err)
-				}
-				j.WolCount = count
-			case "retry_after":
-				if !d.NextArg() {
-					return d.ArgErr()
-				}
-				retry, err := strconv.Atoi(d.Val())
-				if err != nil {
-					return d.Errf("invalid retry_after: %v", err)
-				}
-				j.RetryAfter = retry
-			default:
-				return d.Errf("unrecognized subdirective: %s", d.Val())
+			if err := j.parseSubdirective(d); err != nil {
+				return err
 			}
 		}
 	}
+	return nil
+}
+
+func (j *JellyWol) parseSubdirective(d *caddyfile.Dispenser) error {
+	val := d.Val()
+
+	// Handle list-based arguments
+	if val == "block_paths" {
+		j.BlockPaths = d.RemainingArgs()
+		return nil
+	}
+	if val == "trigger_paths" {
+		j.TriggerPaths = d.RemainingArgs()
+		return nil
+	}
+
+	// Handle single-value arguments
+	if !d.NextArg() {
+		return d.ArgErr()
+	}
+
+	switch val {
+	case "mac":
+		j.Mac = d.Val()
+	case "broadcast":
+		j.Broadcast = d.Val()
+	case "ping_ip":
+		j.PingIP = d.Val()
+	case "timeout":
+		j.Timeout = d.Val()
+	case "ping_port":
+		return j.parseInt(d.Val(), &j.PingPort, "ping_port")
+	case "wol_count":
+		return j.parseInt(d.Val(), &j.WolCount, "wol_count")
+	case "retry_after":
+		return j.parseInt(d.Val(), &j.RetryAfter, "retry_after")
+	default:
+		return d.Errf("unrecognized subdirective: %s", val)
+	}
+
+	return nil
+}
+
+func (j *JellyWol) parseInt(val string, target *int, field string) error {
+	parsed, err := strconv.Atoi(val)
+	if err != nil {
+		return fmt.Errorf("invalid %s: %w", field, err)
+	}
+	*target = parsed
 	return nil
 }
 
