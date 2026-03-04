@@ -1,22 +1,19 @@
 version: '3.8'
 
 services:
-  jellywolproxy:
-    image: ghcr.io/stoufiler/jellywolproxy:latest
-    container_name: jellywolproxy
+  caddy-jellywol:
+    image: ghcr.io/stoufiler/caddy-jellywol:latest
+    container_name: caddy-jellywol
     network_mode: host
     volumes:
-      - ./config.json:/config/config.json:ro
-      # Optional: persist logs
-      # - ./logs:/logs
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./caddy_data:/data
+      - ./caddy_config:/config
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "/jellywolproxy", "--version"]
+      test: ["CMD", "/usr/bin/caddy", "version"]
       interval: 30s
       timeout: 3s
       retries: 3
     environment:
-      # Optional: override config with environment variables
-      # JELLYFIN_API_KEY: your-api-key
-      # SERVER_MAC_ADDRESS: XX:XX:XX:XX:XX:XX
       TZ: Europe/Paris

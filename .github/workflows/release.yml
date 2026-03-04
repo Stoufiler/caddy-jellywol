@@ -44,7 +44,7 @@ jobs:
                 continue
               fi
 
-              output="jellywolproxy-${goos}-${goarch}"
+              output="caddy-jellywol-${goos}-${goarch}"
               if [ "$goos" = "windows" ]; then
                 output="${output}.exe"
               fi
@@ -54,7 +54,7 @@ jobs:
                 -ldflags="-s -w -X main.version=${version}" \
                 -trimpath \
                 -o "dist/${output}" \
-                ./cmd/jellywolproxy
+                ./cmd/caddy-jellywol
 
               # Compress binary (except for Darwin due to notarization)
               if [ "$goos" != "darwin" ]; then
@@ -68,7 +68,7 @@ jobs:
           cd dist
 
           # Create archives
-          for file in jellywolproxy-*; do
+          for file in caddy-jellywol-*; do
             if [[ $file == *.exe ]]; then
               # Windows: zip
               zip "${file%.exe}.zip" "$file"

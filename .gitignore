@@ -57,5 +57,5 @@ debug.test
 __debug_bin
 
 # Project specific build artifacts
-/jellywolproxy
+/caddy-jellywol
 /main

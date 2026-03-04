@@ -1,9 +1,9 @@
-# JellyWolProxy — Copilot Instructions
+# caddy-jellywol — Copilot Instructions
 
 ## Build, Test, Lint
 
 ```bash
-make build          # builds to build/jellywolproxy
+make build          # builds to build/caddy-jellywol
 make test           # go test -v ./...
 make lint           # golangci-lint run ./...
 make fmt            # go fmt ./...
@@ -19,7 +19,7 @@ Pre-commit hooks run: `go-fmt`, `go-imports`, `go-cyclo` (max 15), `golangci-lin
 
 ## Architecture
 
-The proxy is a single binary (`cmd/jellywolproxy/main.go`) built around `gorilla/mux`. On startup it:
+The proxy is a single binary (`cmd/caddy-jellywol/main.go`) built around `gorilla/mux`. On startup it:
 1. Loads and validates `config.json` (via `spf13/viper`; sensitive fields can be overridden by env vars `JELLYFIN_API_KEY`, `SERVER_MAC_ADDRESS`, `JELLYFIN_URL`)
 2. Wires together the router with specific route handlers (`/health`, `/health/ready`, `/metrics`, `/status/*`, `/ping`) and a catch-all proxy handler
 

@@ -1,7 +1,7 @@
 .PHONY: all build clean run test lint fmt help pre-commit-install pre-commit-run setup release
 
 # Binary name
-BINARY_NAME=jellywolproxy
+BINARY_NAME=caddy-jellywol
 
 # Go related variables
 GOBASE=$(shell pwd)
@@ -22,9 +22,13 @@ help: ## Display this help screen
 
 all: clean build ## Clean and build the project
 
-build: ## Build the binary
-	@echo "Building $(BINARY_NAME)..."
-	@go build ${LDFLAGS} -o $(BUILD_DIR)/$(BINARY_NAME) ./cmd/...
+build: ## Build the binary with xcaddy
+	@echo "Building $(BINARY_NAME) with xcaddy..."
+	@if ! command -v xcaddy >/dev/null; then \
+		echo "Installing xcaddy..."; \
+		go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest; \
+	fi
+	@xcaddy build --with github.com/Stoufiler/caddy-jellywol=. --output $(BUILD_DIR)/$(BINARY_NAME)
 
 clean: ## Remove build artifacts
 	@echo "Cleaning build artifacts..."

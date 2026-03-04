@@ -1,0 +1,25 @@
+# Caddyfile.example
+# Specialized setup for: Standalone Jellyfin + Remote Storage (NAS)
+
+:3881 {
+    jellywol {
+        mac aa:bb:cc:dd:ee:ff
+        ping_ip 192.168.1.50   # IP of your NAS
+        ping_port 2049         # NFS Port (to ensure storage is ready)
+
+        # 1. Non-Blocking Trigger:
+        # Send WOL in background when browsing libraries, but DON'T block the user.
+        trigger_paths /Items* /Library*
+
+        # 2. Blocking Paths:
+        # Return 503 + Retry-After for these paths (Streaming/Download)
+        # Infuse and Jellyfin apps will automatically retry after X seconds.
+        block_paths /Videos/* /Items/*/Download /Items/*/stream*
+
+        retry_after 10         # Ask client to retry in 10 seconds
+        wol_count 3            # Send 3 packets for reliability
+    }
+
+    # Final proxy to your Jellyfin server (always ON)
+    reverse_proxy 192.168.1.10:8096
+}

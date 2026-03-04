@@ -1,260 +1,118 @@
-# JellyWolProxy
+# caddy-jellywol (Caddy Plugin)
 
-[![Go](https://github.com/Stoufiler/JellyWolProxy/actions/workflows/go.yml/badge.svg)](https://github.com/Stoufiler/JellyWolProxy/actions/workflows/go.yml)
-[![Release](https://github.com/Stoufiler/JellyWolProxy/actions/workflows/release.yml/badge.svg)](https://github.com/Stoufiler/JellyWolProxy/actions/workflows/release.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/Stoufiler/JellyWolProxy)](https://goreportcard.com/report/github.com/Stoufiler/JellyWolProxy)
-[![License](https://img.shields.io/github/license/Stoufiler/JellyWolProxy)](LICENSE)
-[![GitHub release](https://img.shields.io/github/v/release/Stoufiler/JellyWolProxy)](https://github.com/Stoufiler/JellyWolProxy/releases/latest)
-[![Docker Pulls](https://img.shields.io/docker/pulls/stoufiler/jellywolproxy)](https://github.com/Stoufiler/JellyWolProxy/pkgs/container/jellywolproxy)
+[![Go](https://github.com/Stoufiler/caddy-jellywol/actions/workflows/go.yml/badge.svg)](https://github.com/Stoufiler/caddy-jellywol/actions/workflows/go.yml)
+[![Release](https://github.com/Stoufiler/caddy-jellywol/actions/workflows/release.yml/badge.svg)](https://github.com/Stoufiler/caddy-jellywol/actions/workflows/release.yml)
+[![License](https://img.shields.io/github/license/Stoufiler/caddy-jellywol)](LICENSE)
+[![Docker Pulls](https://img.shields.io/docker/pulls/stoufiler/caddy-jellywol)](https://github.com/Stoufiler/caddy-jellywol/pkgs/container/caddy-jellywol)
 
-JellyWolProxy is a smart proxy server that seamlessly integrates Jellyfin media server with Wake-on-LAN capabilities. It automatically manages your Jellyfin server's power state by waking it up on-demand when media content is requested and forwarding traffic efficiently.
+caddy-jellywol is a smart [Caddy](https://caddyserver.com/) plugin that seamlessly integrates your media server (like Jellyfin) or remote storage (like a NAS) with Wake-on-LAN capabilities. It acts as an HTTP middleware for Caddy, automatically managing your server's power state by waking it up on-demand when someone tries to access specific paths.
+
+Instead of reinventing the wheel with a custom proxy, caddy-jellywol leverages the robust, production-ready, and high-performance reverse proxy native to Caddy.
 
 ## Key Features
 
-- **Smart Power Management**: Automatically wakes up your Jellyfin server using Wake-on-LAN when media is requested.
-- **Transparent Proxying**: Holds and forwards requests to your Jellyfin server after it has woken up.
-- **Energy Efficient**: Allows your media server to sleep when not in use.
-- **Configurable**: Customize wake-up triggers, timeouts, and logging through a configuration file and command-line flags.
-- **Robust**: Validates your configuration on startup to prevent errors.
-- **Always Up-to-date**: Automatically receives dependency updates via Renovate.
+- **Smart Power Management**: Intercepts requests. If your server is offline, it sends a Wake-on-LAN (WoL) magic packet to wake it up.
+- **Path Filtering (Trigger vs Block)**: Define which URLs simply trigger the wake-up in the background, and which URLs should be blocked until the server is ready.
+- **App Friendly (Infuse/Jellyfin)**: Returns standard `503 Service Unavailable` with `Retry-After` headers, ensuring media players automatically retry without breaking.
+- **Native Caddy Power**: Once the server is online, the plugin steps out of the way, letting Caddy handle the proxying.
+- **Energy Efficient**: Allows your heavy storage or media server to sleep when not in use.
 
 ## Installation
 
-### Binary Release
+### Using Docker (Recommended)
 
-Download the latest release for your platform from the [releases page](https://github.com/Stoufiler/JellyWolProxy/releases).
+We provide a pre-built Docker image based on Caddy with the `jellywol` plugin included.
 
-### Docker
-
-```bash
-docker pull ghcr.io/stoufiler/jellywolproxy:latest
-
-docker run -d \
-  --name jellywolproxy \
-  --network host \
-  -v ./config.json:/config/config.json:ro \
-  ghcr.io/stoufiler/jellywolproxy:latest
-```
-
-**Docker Compose:**
+**docker-compose.yml:**
 
 ```yaml
 version: '3.8'
 services:
-  jellywolproxy:
-    image: ghcr.io/stoufiler/jellywolproxy:latest
-    container_name: jellywolproxy
-    network_mode: host
+  caddy-jellywol:
+    image: ghcr.io/stoufiler/caddy-jellywol:latest
+    container_name: caddy-jellywol
+    network_mode: host # Required for Wake-on-LAN to broadcast properly
     volumes:
-      - ./config.json:/config/config.json:ro
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./caddy_data:/data
+      - ./caddy_config:/config
     restart: unless-stopped
+    environment:
+      TZ: Europe/Paris
 ```
 
-> **Note:** `network_mode: host` is required for Wake-on-LAN to work properly.
+### Build from Source (xcaddy)
 
-### Build from Source
-
-1. Ensure you have Go 1.25 or later installed.
-2. Clone the repository:
-   ```bash
-   git clone https://github.com/Stoufiler/JellyWolProxy.git
-   cd JellyWolProxy
-   ```
-3. Build the project:
-   ```bash
-   make build
-   # or
-   go build -o jellywolproxy ./cmd/jellywolproxy
-   ```
-
-## Usage
-
-Run the proxy using the following command:
+If you prefer running the binary directly, you can compile Caddy with this plugin using [xcaddy](https://github.com/caddyserver/xcaddy):
 
 ```bash
-./jellywolproxy [flags]
+xcaddy build --with github.com/Stoufiler/caddy-jellywol
 ```
 
-#### Command-line Flags
+## Deployment Scenario: Chained Proxy (Sidecar)
 
-- `--config`: Path to the `config.json` file. (Default: `config.json`)
-- `--port`: Port for the proxy to run on. (Default: `3881`)
-- `--log-level`: Set the logging level (`Debug`, `Info`, `Warn`, `Error`). This overrides the `logLevel` in the config file.
+If you already have a main Caddy (or another proxy like Nginx/Traefik) handling your HTTPS and domains, you can run caddy-jellywol as a "Sidecar" on a specific port. This is perfect if your Jellyfin server is always on, but your media files are on a sleeping NAS.
 
-## Configuration
-
-Create a `config.json` file by copying the `config.json.example` and filling in the values. The application will validate this configuration on startup and exit if any values are invalid.
-
-```json
-{
-  "jellyfinUrl": "your.jellyfin.domain",
-  "apiKey": "your-jellyfin-api-key",
-  "macAddress": "XX:XX:XX:XX:XX:XX",
-  "broadcastAddress": "255.255.255.255:9",
-  "wakeUpIp": "192.168.0.x",
-  "wakeUpPort": 80,
-  "forwardIp": "192.168.0.x",
-  "forwardPort": 8096,
-  "wakeUpEndpoints": [
-    "/videos/*/main.m3u8",
-    "/Videos/*/stream"
-  ],
-  "serverWakeUpTimeout": 120,
-  "serverWakeUpTicker": 5,
-  "postPingDelaySeconds": 0,
-  "logLevel": "Info"
+**1. Your Main Proxy (e.g., Caddy on Port 443):**
+```caddyfile
+jellyfin.yourdomain.com {
+    # Forward everything to the caddy-jellywol container
+    reverse_proxy localhost:3881
 }
 ```
+
+**2. caddy-jellywol (Running on Port 3881):**
+```caddyfile
+:3881 {
+    jellywol {
+        mac aa:bb:cc:dd:ee:ff
+        ping_ip 192.168.1.50   # IP of your NAS
+        ping_port 2049         # NFS Port (to ensure storage is ready)
+
+        # 1. Non-Blocking Trigger:
+        # Send WOL in background when browsing libraries, but DON'T block the user.
+        trigger_paths /Items* /Library*
+
+        # 2. Blocking Paths:
+        # Return 503 + Retry-After for these paths (Streaming/Download)
+        # Infuse and Jellyfin apps will automatically retry after X seconds.
+        block_paths /Videos/* /Items/*/Download /Items/*/stream*
+
+        retry_after 10         # Ask client to retry in 10 seconds
+        wol_count 3            # Send 3 packets for reliability
+    }
+
+    # Final proxy to your Jellyfin server (always ON)
+    reverse_proxy 192.168.1.10:8096
+}
+```
+
+This setup keeps your main proxy clean, keeps the Jellyfin UI fast, and delegates the Wake-On-LAN logic specifically for heavy media streaming.
+
+> **Note:** `network_mode: host` is highly recommended for the caddy-jellywol container to ensure WOL packets reach your local network.
 
 #### Configuration Parameters
 
-- `jellyfinUrl`: Your Jellyfin server's domain.
-- `apiKey`: Jellyfin API key for authentication.
-- `macAddress`: MAC address of the Jellyfin server for Wake-on-LAN.
-- `broadcastAddress`: Network broadcast address for WoL packets.
-- `wakeUpIp`: IP address of the server to be woken up.
-- `wakeUpPort`: Port used to check if the server is online.
-- `forwardIp`: IP address of the Jellyfin server to forward requests to.
-- `forwardPort`: Port of the Jellyfin server.
-- `wakeUpEndpoints`: List of URL paths that will trigger a server wake-up.
-- `serverWakeUpTimeout`: (Optional) The maximum time in seconds to wait for the server to come online. Defaults to `120`.
-- `serverWakeUpTicker`: (Optional) The interval in seconds at which to check if the server is online during wake-up. Defaults to `5`.
-- `postPingDelaySeconds`: (Optional) The delay in seconds to wait after the server is confirmed to be online before proxying requests. Defaults to `0`.
-- `logLevel`: (Optional) The logging level. Can be `Debug`, `Info`, `Warn`, or `Error`. Defaults to `Info`. Can be overridden by the `--log-level` command-line flag.
-- `cacheEnabled`: (Optional) Enable response caching for improved performance. Defaults to `false`.
-- `cacheTTLSeconds`: (Optional) Cache time-to-live in seconds. Defaults to `300` (5 minutes).
+- `mac`: **Required**. The MAC address of the server to wake up.
+- `ping_ip`: **Required**. The IP address of the server (used to check if it's online).
+- `ping_port`: **Required**. The TCP port to ping (e.g., 8096 for Jellyfin, 445 for SMB, 2049 for NFS).
+- `broadcast`: (Optional) The broadcast address for the WOL packet. Defaults to `255.255.255.255:9`.
+- `timeout`: (Optional) The timeout for the TCP ping check. Defaults to `2s`.
+- `block_paths`: (Optional) Space-separated list of paths that should be blocked with a 503 error if the server is down. Sends WOL.
+- `trigger_paths`: (Optional) Space-separated list of paths that send WOL in the background but let the request pass through to the proxy immediately.
+- `wol_count`: (Optional) Number of WOL packets to send in sequence for reliability. Defaults to `1`.
+- `retry_after`: (Optional) The number of seconds sent in the `Retry-After` HTTP header. Defaults to `10`.
 
-### Environment Variables
-
-For enhanced security, sensitive configuration values can be provided via environment variables instead of storing them in the config file:
-
-- `JELLYFIN_API_KEY`: Overrides the `apiKey` configuration
-- `SERVER_MAC_ADDRESS`: Overrides the `macAddress` configuration
-- `JELLYFIN_URL`: Overrides the `jellyfinUrl` configuration
-
-**Example:**
-
-```bash
-export JELLYFIN_API_KEY="your-secret-api-key"
-export SERVER_MAC_ADDRESS="50:91:e3:c9:37:18"
-./jellywolproxy --config config.json
-```
-
-Environment variables take precedence over values in the config file.
+*Note: If neither `block_paths` nor `trigger_paths` are defined, the plugin acts as a catch-all and blocks all paths if the server is down.*
 
 ## How It Works
 
-1.  When a request is received that matches one of the configured `wakeUpEndpoints`, JellyWolProxy checks if the Jellyfin server is online.
-2.  If the server is offline, the proxy sends a Wake-on-LAN (WoL) magic packet to wake it up.
-3.  The proxy then holds the request and waits for the server to become available, periodically checking its status.
-4.  Once the server is online, the original request is forwarded to it.
-5.  All subsequent requests are forwarded directly to the Jellyfin server.
-
-## Advanced Features
-
-### Response Caching
-
-JellyWolProxy includes an optional response caching layer to improve performance and reduce load on your Jellyfin server. When enabled:
-
-- GET requests are cached for the configured TTL (Time-To-Live)
-- Streaming endpoints (`.m3u8`, `.ts`, `/stream`) are automatically excluded from caching
-- Cache status is indicated via the `X-Cache` header (`HIT` or `MISS`)
-
-To enable caching, set `cacheEnabled: true` in your configuration and optionally adjust `cacheTTLSeconds` (default: 300 seconds).
-
-### Dashboard & Status Page
-
-JellyWolProxy includes a built-in web dashboard accessible at `/status` that provides:
-
-- **Real-time server state** (online/offline/waking)
-- **Statistics**: uptime, total requests, cache hit rate, wake-up count
-- **Live log streaming** via Server-Sent Events (SSE)
-
-#### Dashboard Endpoints
-
-- `/status` - Main dashboard page (HTML)
-- `/status/api` - JSON API for statistics
-- `/status/logs` - Live log stream (SSE)
-
-#### SSO Authentication (Optional)
-
-The dashboard can be protected with OIDC/OAuth2 authentication, compatible with providers like [Pocket-ID](https://github.com/pocket-id/pocket-id), Keycloak, Authentik, etc.
-
-To enable SSO, configure the `dashboardOIDC` section in your config:
-
-```json
-{
-  "dashboardOIDC": {
-    "enabled": true,
-    "issuer_url": "https://pocket-id.example.com",
-    "client_id": "jellywolproxy",
-    "client_secret": "your-client-secret",
-    "redirect_url": "http://your-proxy:3881/status/callback",
-    "scopes": "openid email profile"
-  }
-}
-```
-
-| Parameter | Description |
-|-----------|-------------|
-| `enabled` | Enable/disable SSO authentication |
-| `issuer_url` | OIDC provider URL (must support `.well-known/openid-configuration`) |
-| `client_id` | OAuth2 client ID |
-| `client_secret` | OAuth2 client secret |
-| `redirect_url` | Callback URL (must point to `/status/callback`) |
-| `scopes` | OAuth2 scopes to request (default: `openid email profile`) |
-
-When SSO is disabled, the dashboard is publicly accessible.
-
-### Configuration Hot-Reload
-
-JellyWolProxy supports reloading configuration without restarting the server by sending a `SIGHUP` signal:
-
-```bash
-kill -SIGHUP $(pgrep jellywolproxy)
-```
-
-The following settings can be hot-reloaded:
-- Log level
-- Cache TTL
-- Wake-up timeouts and intervals
-
-Note: Some settings (port, IP addresses, MAC address) require a full restart.
-
-### Graceful Shutdown
-
-The proxy handles shutdown signals (`SIGINT`, `SIGTERM`) gracefully:
-
-- Stops accepting new connections
-- Waits up to 30 seconds for active requests to complete
-- Ensures no requests are dropped during deployment or restart
-
-Simply send a termination signal (e.g., `Ctrl+C` or `kill`) and the proxy will shutdown cleanly.
-
-## Monitoring
-
-JellyWolProxy provides comprehensive monitoring capabilities through health check endpoints and Prometheus metrics.
-
-### Health Check Endpoints
-
-- `/health`: Basic health check endpoint.
-- `/health/ready`: Detailed readiness check that verifies Jellyfin connectivity.
-
-### Prometheus Metrics
-
-The `/metrics` endpoint exposes key metrics about the proxy's performance and state. You can find more details about the available metrics in the source code.
-
-## Dependency Management
-
-This project uses [Renovate](https://github.com/renovatebot/renovate) to automatically keep dependencies, including Go modules and GitHub Actions, up-to-date. Renovate will create pull requests for any available updates.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## Coded with Gemini
-
-This entire project was coded using Google's Gemini. I have only provided the prompts and Gemini has done the rest.
+1. A user visits your Caddy server (e.g., `https://jellyfin.yourdomain.com/Videos/123/stream`).
+2. Caddy passes the request to the `jellywol` middleware.
+3. The plugin matches the path and attempts a fast TCP ping to `ping_ip:ping_port`.
+   - **If successful:** The server is online! The plugin immediately passes the request to Caddy's `reverse_proxy`.
+   - **If it fails:** The server is offline. The plugin broadcasts the WOL magic packet(s), and immediately returns a `503 Service Unavailable` status with a `Retry-After: 10` header.
+4. The media player (Infuse/Jellyfin App) waits 10 seconds and automatically retries the request while the server boots up.
 
 ## License
 

@@ -1,51 +1,25 @@
 # Build stage
-FROM golang:1.25-alpine AS builder
+FROM caddy:builder AS builder
 
 WORKDIR /build
-
-# Install build dependencies
-RUN apk add --no-cache git ca-certificates tzdata
-
-# Copy go mod files
-COPY go.mod go.sum ./
-RUN go mod download
 
 # Copy source code
 COPY . .
 
 # Build arguments
 ARG VERSION=dev
-ARG TARGETOS
-ARG TARGETARCH
 
-# Build binary
-RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
-    go build -ldflags="-s -w -X main.version=${VERSION}" \
-    -trimpath \
-    -o jellywolproxy \
-    ./cmd/jellywolproxy
+# Build Caddy with the local jellywol plugin
+RUN xcaddy build \
+    --with github.com/Stoufiler/caddy-jellywol=. \
+    --output /caddy-jellywol
 
 # Runtime stage
-FROM scratch
+FROM caddy:alpine
 
-# Copy CA certificates for HTTPS
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+# Copy binary from builder
+COPY --from=builder /caddy-jellywol /usr/bin/caddy
 
-# Copy timezone data
-COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
-
-# Copy binary
-COPY --from=builder /build/jellywolproxy /jellywolproxy
-
-# Expose port
-EXPOSE 3881
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD ["/jellywolproxy", "--version"]
-
-# Run as non-root user
-USER 65534:65534
-
-ENTRYPOINT ["/jellywolproxy"]
-CMD ["--config", "/config/config.json"]
+# Set entrypoint and default command
+ENTRYPOINT ["/usr/bin/caddy"]
+CMD ["run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
