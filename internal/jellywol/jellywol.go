@@ -37,12 +37,15 @@ type JellyWol struct {
 	RetryAfter   int      `json:"retry_after,omitempty"`
 
 	// Internal state
+	// Internal state
 	logger  *zap.Logger
 	macAddr net.HardwareAddr
 	timeout time.Duration
 
 	// wakingUp prevents sending multiple WOL packets simultaneously.
-	wakingUp atomic.Bool
+	// Using a pointer avoids the "copylocks" error with go vet since Caddy module
+	// registration requires passing the struct by value.
+	wakingUp *atomic.Bool
 }
 
 // ProvisionMock is strictly used for integration testing to inject a mock logger and bypass Caddy context.
@@ -57,6 +60,9 @@ func (j *JellyWol) ProvisionMock(logger *zap.Logger, customTimeout time.Duration
 	if j.RetryAfter <= 0 {
 		j.RetryAfter = 10
 	}
+	if j.wakingUp == nil {
+		j.wakingUp = &atomic.Bool{}
+	}
 }
 
 // CaddyModule returns the Caddy module information.
@@ -65,13 +71,17 @@ func (j *JellyWol) ProvisionMock(logger *zap.Logger, customTimeout time.Duration
 func (JellyWol) CaddyModule() caddy.ModuleInfo {
 	return caddy.ModuleInfo{
 		ID:  "http.handlers.jellywol",
-		New: func() caddy.Module { return new(JellyWol) },
+		New: func() caddy.Module { return &JellyWol{wakingUp: &atomic.Bool{}} },
 	}
 }
 
 // Provision sets up the module and parses its configuration.
 func (j *JellyWol) Provision(ctx caddy.Context) error {
 	j.logger = ctx.Logger()
+
+	if j.wakingUp == nil {
+		j.wakingUp = &atomic.Bool{}
+	}
 
 	// Default to standard WOL broadcast port if not specified
 	if j.Broadcast == "" {

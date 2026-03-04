@@ -1,6 +1,7 @@
 package jellywol
 
 import (
+	"sync/atomic"
 	"testing"
 
 	"github.com/caddyserver/caddy/v2/caddyconfig/caddyfile"
@@ -91,7 +92,9 @@ func TestJellyWol_UnmarshalCaddyfile(t *testing.T) {
 }
 
 func TestJellyWol_State(t *testing.T) {
-	j := &JellyWol{}
+	j := &JellyWol{
+		wakingUp: &atomic.Bool{},
+	}
 
 	if !j.wakingUp.CompareAndSwap(false, true) {
 		t.Error("Expected to successfully swap wakingUp from false to true")
